@@ -30,6 +30,7 @@ func New(
 			return msghandler.ErrorCommandNotFoundFallback()
 		},
 		httpAddr: ":8080",
+		router:   router.NewMapStaticRouter(),
 	}
 
 	for _, opt := range opts {
@@ -37,7 +38,7 @@ func New(
 	}
 
 	app := &Application{
-		router: router.NewMapStaticRouter(),
+		router: cfg.router,
 		msngr:  msngr,
 	}
 
