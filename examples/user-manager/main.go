@@ -70,7 +70,7 @@ func (addUserCommand) Actions() *command.Actions {
 
 			return message.Respond(&messenger.Answer{
 				Text: "Select user type",
-				Enum: []string{
+				Menu: []string{
 					"internal",
 					"external",
 				},

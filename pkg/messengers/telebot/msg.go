@@ -44,8 +44,8 @@ func (m *message) Respond(answer *messenger.Answer) error {
 		what = answer.Text
 	}
 
-	if len(answer.Enum) > 0 {
-		opts = append(opts, m.buildEnumOpt(answer.Enum))
+	if len(answer.Menu) > 0 {
+		opts = append(opts, m.buildMenuOpt(answer.Menu))
 	}
 
 	return m.ctx.Send(what, opts...)
@@ -58,7 +58,7 @@ func (m *message) ExtractCommandName() string {
 	return ""
 }
 
-func (m *message) buildEnumOpt(enum []string) *telebot.ReplyMarkup {
+func (m *message) buildMenuOpt(enum []string) *telebot.ReplyMarkup {
 	menu := &telebot.ReplyMarkup{
 		ResizeKeyboard:  true,
 		OneTimeKeyboard: true,
