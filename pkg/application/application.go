@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/artarts36/lowbot/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
@@ -20,24 +24,34 @@ type Application struct {
 	router  router.Router
 	handler *msghandler.Handler
 	msngr   messenger.Messenger
-	server  *http.Server
+
+	server        *http.Server
+	metricsServer *http.Server
 }
 
 func New(
 	msngr messenger.Messenger,
 	opts ...Option,
-) *Application {
+) (*Application, error) {
 	cfg := &config{
 		storage: state.NewMemoryStorage(),
 		commandNotFoundFallback: func(router.Router) msghandler.CommandNotFoundFallback {
 			return msghandler.ErrorCommandNotFoundFallback()
 		},
-		httpAddr: ":8080",
-		router:   router.NewMapStaticRouter(),
+		httpAddr:             ":8080",
+		metricsHTTPAddr:      ":8081",
+		router:               router.NewMapStaticRouter(),
+		prometheusRegisterer: prometheus.DefaultRegisterer,
 	}
 
 	for _, opt := range opts {
 		opt(cfg)
+	}
+
+	metricsGroup := metrics.NewGroup("lowbot")
+
+	if err := cfg.prometheusRegisterer.Register(metricsGroup); err != nil {
+		return nil, fmt.Errorf("register metrics: %w", err)
 	}
 
 	app := &Application{
@@ -52,8 +66,9 @@ func New(
 	)
 
 	app.prepareHTTPServer(cfg.httpAddr)
+	app.prepareMetricsServer(cfg.metricsHTTPAddr)
 
-	return app
+	return app, nil
 }
 
 func (app *Application) AddCommand(cmdName string, cmd command.Command) error {
@@ -92,6 +107,12 @@ func (app *Application) Run() error {
 		close(ch)
 	}()
 
+	go func() {
+		if err := app.metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("[application] failed to start metrics server", slog.Any("err", err))
+		}
+	}()
+
 	slog.Info("[application] listen http server", slog.String("addr", app.server.Addr))
 
 	return app.server.ListenAndServe()
@@ -120,6 +141,19 @@ func (app *Application) prepareHTTPServer(addr string) {
 	mux.Handle("/", log(app.msngr))
 
 	app.server = &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: readTimeout,
+	}
+}
+
+func (app *Application) prepareMetricsServer(addr string) {
+	const readTimeout = 30 * time.Second
+
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	app.metricsServer = &http.Server{
 		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: readTimeout,

@@ -30,16 +30,21 @@ func main() {
 		panic(err)
 	}
 
-	app := application.New(
+	app, err := application.New(
 		msgr,
 		application.WithCommandSuggestion(),
 		application.WithHTTPAddr(":9005"),
 	)
+	if err != nil {
+		slog.Error("failed to create application", slog.Any("err", err))
+		os.Exit(1)
+	}
 
 	app.MustAddCommand("add", &addUserCommand{})
 
 	if err = app.Run(); err != nil {
 		slog.Error("failed to run application", slog.Any("err", err))
+		os.Exit(1)
 	}
 }
 
