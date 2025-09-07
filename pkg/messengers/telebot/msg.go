@@ -77,6 +77,23 @@ func (m *message) Respond(answer *messenger.Answer) error {
 	return m.ctx.Send(what, opts...)
 }
 
+func (m *message) RespondObject(object messenger.Object) error {
+	var what interface{}
+
+	switch o := object.(type) {
+	case *messenger.LocalImage:
+		what = &telebot.Photo{
+			File: telebot.File{
+				FileLocal: o.Path,
+			},
+		}
+	default:
+		return fmt.Errorf("unsupported object type: %T", o)
+	}
+
+	return m.ctx.Send(what)
+}
+
 func (m *message) ExtractCommandName() string {
 	if strings.HasPrefix(m.text, "/") {
 		return strings.TrimSpace(m.text[1:])

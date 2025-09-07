@@ -83,6 +83,13 @@ func (addUserCommand) Description() string { return "addUser" }
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(_ context.Context, message messenger.Message, _ *state.State) error {
+			err := message.RespondObject(&messenger.LocalImage{
+				Path: "./examples/user-manager/image.jpg",
+			})
+			if err != nil {
+				return fmt.Errorf("send image: %w", err)
+			}
+
 			return message.Respond(&messenger.Answer{
 				Text: "Enter user name",
 			})
