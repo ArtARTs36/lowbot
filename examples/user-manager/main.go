@@ -26,6 +26,7 @@ func main() {
 	app := application.New(
 		msgr,
 		application.WithCommandSuggestion(),
+		application.WithHTTPAddr(":9005"),
 	)
 
 	app.AddCommand("add", &addUserCommand{})

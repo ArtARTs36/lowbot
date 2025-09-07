@@ -9,6 +9,7 @@ import (
 type config struct {
 	storage                 state.Storage
 	commandNotFoundFallback func(router router.Router) msghandler.CommandNotFoundFallback
+	httpAddr                string
 }
 
 type Option func(*config)
@@ -32,5 +33,11 @@ func WithCommandSuggestion() Option {
 		c.commandNotFoundFallback = func(router router.Router) msghandler.CommandNotFoundFallback {
 			return msghandler.SuggestCommandNotFoundFallback(router)
 		}
+	}
+}
+
+func WithHTTPAddr(addr string) Option {
+	return func(c *config) {
+		c.httpAddr = addr
 	}
 }

@@ -29,6 +29,7 @@ func New(
 		commandNotFoundFallback: func(router.Router) msghandler.CommandNotFoundFallback {
 			return msghandler.ErrorCommandNotFoundFallback()
 		},
+		httpAddr: ":8080",
 	}
 
 	for _, opt := range opts {
@@ -46,7 +47,7 @@ func New(
 		cfg.commandNotFoundFallback(app.router),
 	)
 
-	app.prepareHTTPServer()
+	app.prepareHTTPServer(cfg.httpAddr)
 
 	return app
 }
@@ -100,14 +101,14 @@ func (app *Application) Close() error {
 	return errors.Join(errs...)
 }
 
-func (app *Application) prepareHTTPServer() {
+func (app *Application) prepareHTTPServer(addr string) {
 	log := sloghttp.New(slog.Default())
 
 	mux := http.NewServeMux()
 	mux.Handle("/", log(app.msngr))
 
 	app.server = &http.Server{
-		Addr:    "localhost:9005",
+		Addr:    addr,
 		Handler: mux,
 	}
 }
