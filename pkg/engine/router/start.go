@@ -3,10 +3,11 @@ package router
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/state"
-	"strings"
 )
 
 type startCommand struct {
@@ -30,7 +31,7 @@ func (c *startCommand) Description() string {
 func (c *startCommand) Actions() *command.Actions {
 	return command.NewActions().Then(
 		"start",
-		func(ctx context.Context, message messenger.Message, state *state.State) error {
+		func(_ context.Context, message messenger.Message, _ *state.State) error {
 			text := make([]string, len(c.router.commands)-1)
 
 			i := 0

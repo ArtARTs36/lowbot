@@ -3,14 +3,17 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"time"
+
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
 	"github.com/artarts36/lowbot/pkg/engine/router"
 	"github.com/artarts36/lowbot/pkg/engine/state"
 	sloghttp "github.com/samber/slog-http"
-	"log/slog"
-	"net/http"
 )
 
 type Application struct {
@@ -60,6 +63,12 @@ func (app *Application) AddCommand(cmdName string, cmd command.Command) error {
 	})
 }
 
+func (app *Application) MustAddCommand(cmdName string, cmd command.Command) {
+	if err := app.AddCommand(cmdName, cmd); err != nil {
+		panic(fmt.Sprintf("failed to add command %q: %v", cmdName, err))
+	}
+}
+
 func (app *Application) Run() error {
 	ch := make(chan messenger.Message)
 
@@ -103,13 +112,16 @@ func (app *Application) Close() error {
 }
 
 func (app *Application) prepareHTTPServer(addr string) {
+	const readTimeout = 30 * time.Second
+
 	log := sloghttp.New(slog.Default())
 
 	mux := http.NewServeMux()
 	mux.Handle("/", log(app.msngr))
 
 	app.server = &http.Server{
-		Addr:    addr,
-		Handler: mux,
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: readTimeout,
 	}
 }

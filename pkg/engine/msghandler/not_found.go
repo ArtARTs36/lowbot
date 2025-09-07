@@ -3,16 +3,19 @@ package msghandler
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/agnivade/levenshtein"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/router"
-	"strings"
 )
+
+const levenshteinThreshold = 3
 
 type CommandNotFoundFallback func(ctx context.Context, message messenger.Message) error
 
 func ErrorCommandNotFoundFallback() CommandNotFoundFallback {
-	return func(ctx context.Context, message messenger.Message) error {
+	return func(_ context.Context, message messenger.Message) error {
 		return message.Respond(&messenger.Answer{
 			Text: "Command not found.",
 		})
@@ -20,7 +23,7 @@ func ErrorCommandNotFoundFallback() CommandNotFoundFallback {
 }
 
 func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallback {
-	return func(ctx context.Context, message messenger.Message) error {
+	return func(_ context.Context, message messenger.Message) error {
 		msgCmd := message.ExtractCommandName()
 		result := []string{
 			fmt.Sprintf("Command \"%s\" not found.", msgCmd),
@@ -29,7 +32,7 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 		cmds := make([]string, 0)
 
 		for _, cmd := range routes.List() {
-			if levenshtein.ComputeDistance(msgCmd, cmd.Name) < 3 {
+			if levenshtein.ComputeDistance(msgCmd, cmd.Name) < levenshteinThreshold {
 				cmds = append(cmds, fmt.Sprintf("/%s - %s", cmd.Name, cmd.Command.Description()))
 			}
 		}

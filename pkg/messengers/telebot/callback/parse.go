@@ -2,15 +2,17 @@ package callback
 
 import "strings"
 
+const callbackPartsCount = 2
+
 func ParseID(id string) ID {
 	id = strings.TrimPrefix(id, "\f")
 
-	parts := strings.SplitN(id, ":", 2)
-	if len(parts) < 2 {
+	parts := strings.SplitN(id, ":", callbackPartsCount)
+	if len(parts) < callbackPartsCount {
 		return nil
 	}
 
-	switch parts[0] {
+	switch parts[0] { //nolint:gocritic // not need
 	case string(TypePassEnumValue):
 		return NewPassEnumValue(parts[1])
 	}

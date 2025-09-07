@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 )
 
@@ -20,6 +21,6 @@ type Command interface {
 
 type AlwaysInterruptCommand struct{}
 
-func (c *AlwaysInterruptCommand) Interrupt(_ context.Context, msg messenger.Message, _, _ string) (bool, error) {
+func (c *AlwaysInterruptCommand) Interrupt(_ context.Context, _ messenger.Message, _, _ string) (bool, error) {
 	return true, nil
 }

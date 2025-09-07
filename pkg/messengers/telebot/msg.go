@@ -2,12 +2,13 @@ package telebot
 
 import (
 	"fmt"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/messengers/telebot/callback"
-	"gopkg.in/telebot.v4"
 	"log/slog"
 	"strconv"
 	"strings"
+
+	"github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/pkg/messengers/telebot/callback"
+	"gopkg.in/telebot.v4"
 )
 
 type message struct {
@@ -42,10 +43,9 @@ func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message
 		slog.Debug(
 			"callback data parsed: %T",
 			slog.Any("data", clbID),
-			clbID,
 		)
 
-		switch v := clbID.(type) {
+		switch v := clbID.(type) { //nolint:gocritic // not need
 		case *callback.PassEnumValue:
 			slog.Debug(
 				"use enum value from callback",

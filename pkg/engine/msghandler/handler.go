@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/artarts36/lowbot/pkg/logx"
 	"log/slog"
+
+	"github.com/artarts36/lowbot/pkg/logx"
 
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
@@ -132,9 +133,9 @@ func (h *Handler) determineCommandAndState(
 			mState = state.NewState(message.GetChatID(), cmd.Name)
 
 			return cmd, mState, nil
-		} else {
-			return nil, nil, fmt.Errorf("get state from storage: %w", err)
 		}
+
+		return nil, nil, fmt.Errorf("get state from storage: %w", err)
 	}
 
 	slog.DebugContext(

@@ -31,9 +31,7 @@ func WithCommandNotFoundFallback(fallback msghandler.CommandNotFoundFallback) Op
 
 func WithCommandSuggestion() Option {
 	return func(c *config) {
-		c.commandNotFoundFallback = func(router router.Router) msghandler.CommandNotFoundFallback {
-			return msghandler.SuggestCommandNotFoundFallback(router)
-		}
+		c.commandNotFoundFallback = msghandler.SuggestCommandNotFoundFallback
 	}
 }
 

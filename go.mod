@@ -5,6 +5,7 @@ go 1.24.5
 require (
 	github.com/agnivade/levenshtein v1.2.1
 	github.com/cappuccinotm/slogx v1.4.2
+	github.com/go-playground/assert/v2 v2.0.1
 	github.com/samber/slog-http v1.8.1
 	gopkg.in/telebot.v4 v4.0.0-beta.5
 )

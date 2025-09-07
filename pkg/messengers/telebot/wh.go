@@ -2,10 +2,11 @@ package telebot
 
 import (
 	"fmt"
-	messenger2 "github.com/artarts36/lowbot/pkg/engine/messenger"
-	tele "gopkg.in/telebot.v4"
 	"log/slog"
 	"net/http"
+
+	messenger2 "github.com/artarts36/lowbot/pkg/engine/messenger"
+	tele "gopkg.in/telebot.v4"
 )
 
 type WebhookMessenger struct {
@@ -58,7 +59,7 @@ func (s *WebhookMessenger) Listen(ch chan messenger2.Message) error {
 
 			slog.Debug("[webhook-messenger] received update", slog.Int("update.id", update.ID))
 
-			if update.Message != nil {
+			if update.Message != nil { //nolint:gocritic // not need
 				msg = newMessageFromMessage(update.Message, tele.NewContext(s.bot, update))
 			} else if update.Callback != nil {
 				msg = newMessageFromCallback(update.Callback, tele.NewContext(s.bot, update))

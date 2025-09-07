@@ -2,8 +2,9 @@ package logx
 
 import (
 	"context"
-	"github.com/cappuccinotm/slogx"
 	"log/slog"
+
+	"github.com/cappuccinotm/slogx"
 )
 
 type (
@@ -15,9 +16,9 @@ func WithMessageID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, messageID{}, id)
 }
 
-func MessageID(ctx context.Context) (value string, ok bool) {
-	value, ok = ctx.Value(messageID{}).(string)
-	return
+func MessageID(ctx context.Context) (string, bool) {
+	value, ok := ctx.Value(messageID{}).(string)
+	return value, ok
 }
 
 func PropagateMessageID() slogx.Middleware {
@@ -36,9 +37,9 @@ func WithChatID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, chatID{}, id)
 }
 
-func ChatID(ctx context.Context) (value string, ok bool) {
-	value, ok = ctx.Value(chatID{}).(string)
-	return
+func ChatID(ctx context.Context) (string, bool) {
+	value, ok := ctx.Value(chatID{}).(string)
+	return value, ok
 }
 
 func PropagateChatID() slogx.Middleware {

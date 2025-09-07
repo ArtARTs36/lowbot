@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/state"
 )
