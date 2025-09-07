@@ -7,16 +7,22 @@ import (
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/pkg/logx"
 	"github.com/artarts36/lowbot/pkg/messengers/telebot"
+	"github.com/cappuccinotm/slogx"
 	"log/slog"
 	"os"
 	"strings"
 )
 
 func main() {
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	})))
+	slog.SetDefault(slog.New(slogx.Accumulator(slogx.NewChain(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}),
+		logx.PropagateMessageID(),
+		logx.PropagateChatID(),
+	))))
 
 	msgr, err := createMessenger()
 	if err != nil {
@@ -70,9 +76,11 @@ func (addUserCommand) Actions() *command.Actions {
 
 			return message.Respond(&messenger.Answer{
 				Text: "Select user type",
-				Menu: []string{
-					"internal",
-					"external",
+				Enum: messenger.Enum{
+					Values: map[string]string{
+						"int": "internal",
+						"ext": "external",
+					},
 				},
 			})
 		}).

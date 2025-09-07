@@ -54,13 +54,20 @@ func (s *WebhookMessenger) Listen(ch chan messenger2.Message) error {
 	updates := make(chan tele.Update)
 	go func() {
 		for update := range updates {
+			var msg *message
+
 			slog.Debug("[webhook-messenger] received update", slog.Int("update.id", update.ID))
-			if update.Message == nil {
+
+			if update.Message != nil {
+				msg = newMessageFromMessage(update.Message, tele.NewContext(s.bot, update))
+			} else if update.Callback != nil {
+				msg = newMessageFromCallback(update.Callback, tele.NewContext(s.bot, update))
+			} else {
 				slog.Debug("[webhook-messenger] skip update", slog.Int("update.id", update.ID))
 				continue
 			}
 
-			ch <- newMessage(update.Message, tele.NewContext(s.bot, update))
+			ch <- msg
 		}
 	}()
 

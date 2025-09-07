@@ -23,7 +23,7 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 	return func(ctx context.Context, message messenger.Message) error {
 		msgCmd := message.ExtractCommandName()
 		result := []string{
-			"Command not found.",
+			fmt.Sprintf("Command \"%s\" not found.", msgCmd),
 		}
 
 		cmds := make([]string, 0)

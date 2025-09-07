@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/artarts36/lowbot/pkg/logx"
 	"log/slog"
 
 	"github.com/artarts36/lowbot/pkg/engine/command"
@@ -28,6 +29,11 @@ func NewHandler(
 }
 
 func (h *Handler) Handle(ctx context.Context, message messenger.Message) error {
+	ctx = logx.WithMessageID(
+		logx.WithChatID(ctx, message.GetChatID()),
+		message.GetID(),
+	)
+
 	err := h.handle(ctx, message)
 	if err != nil {
 		if errors.Is(err, router.ErrCommandNotFound) {
@@ -112,9 +118,11 @@ func (h *Handler) determineCommandAndState(
 	mState, err := h.stateStorage.Get(ctx, message.GetChatID())
 	if err != nil {
 		if errors.Is(err, state.ErrStateNotFound) {
-			slog.DebugContext(ctx, "[handler] state not found")
+			cmdName := message.ExtractCommandName()
 
-			cmd, err = h.router.Find(message.ExtractCommandName())
+			slog.DebugContext(ctx, "[handler] state not found", slog.String("command.name", cmdName))
+
+			cmd, err = h.router.Find(cmdName)
 			if err != nil {
 				return nil, nil, err
 			}
