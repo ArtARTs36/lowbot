@@ -63,6 +63,7 @@ func New(
 		app.router,
 		cfg.storage,
 		cfg.commandNotFoundFallback(app.router),
+		metricsGroup,
 	)
 
 	app.prepareHTTPServer(cfg.httpAddr)

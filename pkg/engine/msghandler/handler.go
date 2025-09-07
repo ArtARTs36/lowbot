@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/artarts36/lowbot/pkg/metrics"
+
 	"github.com/artarts36/lowbot/pkg/logx"
 
 	"github.com/artarts36/lowbot/pkg/engine/command"
@@ -19,14 +21,21 @@ type Handler struct {
 	stateStorage state.Storage
 
 	commandNotFoundFallback CommandNotFoundFallback
+	metrics                 *metrics.Group
 }
 
 func NewHandler(
 	routes router.Router,
 	stateStorage state.Storage,
 	commandNotFoundFallback CommandNotFoundFallback,
+	metrics *metrics.Group,
 ) *Handler {
-	return &Handler{router: routes, stateStorage: stateStorage, commandNotFoundFallback: commandNotFoundFallback}
+	return &Handler{
+		router:                  routes,
+		stateStorage:            stateStorage,
+		commandNotFoundFallback: commandNotFoundFallback,
+		metrics:                 metrics,
+	}
 }
 
 func (h *Handler) Handle(ctx context.Context, message messenger.Message) error {
@@ -88,6 +97,9 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 				"[handler] next state not found",
 				slog.String("state.name", act.State()),
 			)
+
+			h.metrics.IncCommandFinished(mState.CommandName())
+			h.metrics.ObserveCommandExecution(mState.CommandName(), mState.Duration())
 
 			return h.stateStorage.Delete(ctx, mState)
 		}
@@ -195,7 +207,7 @@ func (h *Handler) findAction(state *state.State, cmd command.Command) (command.A
 
 	st, exists := acts.Get(state.Name())
 	if !exists {
-		return nil, fmt.Errorf("findAction not found")
+		return nil, fmt.Errorf("action not found")
 	}
 
 	return st, nil

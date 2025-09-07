@@ -1,5 +1,7 @@
 package state
 
+import "time"
+
 type State struct {
 	chatID      string
 	name        string
@@ -8,6 +10,8 @@ type State struct {
 	transited bool
 
 	data map[string]string
+
+	startedAt time.Time
 }
 
 func NewState(chatID string, commandName string) *State {
@@ -15,6 +19,23 @@ func NewState(chatID string, commandName string) *State {
 		chatID:      chatID,
 		commandName: commandName,
 		data:        make(map[string]string),
+		startedAt:   time.Now(),
+	}
+}
+
+func NewFullState(
+	chatID string,
+	name string,
+	commandName string,
+	data map[string]string,
+	startedAt time.Time,
+) *State {
+	return &State{
+		chatID:      chatID,
+		name:        name,
+		commandName: commandName,
+		data:        data,
+		startedAt:   startedAt,
 	}
 }
 
@@ -45,4 +66,12 @@ func (m *State) Get(key string) string {
 
 func (m *State) Set(key string, value string) {
 	m.data[key] = value
+}
+
+func (m *State) StartedAt() time.Time {
+	return m.startedAt
+}
+
+func (m *State) Duration() time.Duration {
+	return time.Since(m.startedAt)
 }

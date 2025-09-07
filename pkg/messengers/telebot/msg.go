@@ -2,7 +2,6 @@ package telebot
 
 import (
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 
@@ -36,23 +35,10 @@ func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message
 		text:   clb.Message.Text,
 	}
 
-	slog.Debug("parsing callback data", slog.Any("data", clb.Data))
-
 	clbID := callback.ParseID(clb.Data)
 	if clbID != nil {
-		slog.Debug(
-			"callback data parsed: %T",
-			slog.Any("data", clbID),
-		)
-
 		switch v := clbID.(type) { //nolint:gocritic // not need
 		case *callback.PassEnumValue:
-			slog.Debug(
-				"use enum value from callback",
-				slog.String("callback.id", clbID.String()),
-				slog.String("value", v.Value),
-			)
-
 			msg.text = v.Value
 		}
 	}
