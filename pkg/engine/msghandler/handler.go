@@ -72,11 +72,7 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 		return fmt.Errorf("find action: %w", err)
 	}
 
-	slog.DebugContext(
-		ctx,
-		"[handler] action found",
-		slog.String("state.name", act.State()),
-	)
+	slog.DebugContext(ctx, "[handler] action found", logx.StateName(act.State()))
 
 	err = act.Run(ctx, message, mState)
 	if err != nil {
@@ -157,28 +153,24 @@ func (h *Handler) determineCommandAndState(
 		return nil, nil, fmt.Errorf("get state from storage: %w", err)
 	}
 
-	slog.DebugContext(
-		ctx,
+	slog.DebugContext(ctx,
 		"[handler] found state",
-		slog.String("state.name", mState.Name()),
+		logx.StateName(mState.Name()),
 		slog.String("state.command_name", mState.CommandName()),
 	)
 
 	cmd, err = h.router.Find(mState.CommandName())
 	if err != nil {
-		slog.ErrorContext(
-			ctx,
-			"[handler] failed to find command",
-			slog.String("command.name", mState.CommandName()),
-			slog.Any("err", err),
-		)
+		slog.ErrorContext(ctx, "[handler] failed to find command", logx.CommandName(mState.CommandName()), logx.Err(err))
 
 		return nil, nil, fmt.Errorf("find command: %w", err)
 	}
 
-	slog.DebugContext(ctx, "[handler] command found", slog.String("command.name", cmd.Name))
+	slog.DebugContext(ctx, "[handler] command found", logx.CommandName(cmd.Name))
 
 	if h.detectInterrupt(message, mState) {
+		slog.DebugContext(ctx, "[handler] interrupt detected", logx.CommandName(cmd.Name))
+
 		cmd, mState, err = h.tryInterrupt(ctx, cmd, message, mState)
 		if err != nil {
 			return nil, nil, fmt.Errorf("try interrupt: %w", err)

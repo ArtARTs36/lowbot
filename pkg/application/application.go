@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/artarts36/lowbot/pkg/logx"
+
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
@@ -88,10 +90,8 @@ func (app *Application) Run() error {
 		for msg := range ch {
 			ctx := context.Background()
 
-			slog.InfoContext(ctx, "[application] handling message")
-
 			if err := app.handler.Handle(ctx, msg); err != nil {
-				slog.ErrorContext(ctx, "[application] failed to handle message", slog.Any("err", err))
+				slog.ErrorContext(ctx, "[application] failed to handle message", logx.Err(err))
 			}
 		}
 	}()

@@ -17,7 +17,7 @@ func WithMessageID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, messageID{}, id)
 }
 
-func MessageID(ctx context.Context) (string, bool) {
+func GetMessageID(ctx context.Context) (string, bool) {
 	value, ok := ctx.Value(messageID{}).(string)
 	return value, ok
 }
@@ -25,7 +25,7 @@ func MessageID(ctx context.Context) (string, bool) {
 func PropagateMessageID() slogx.Middleware {
 	return func(next slogx.HandleFunc) slogx.HandleFunc {
 		return func(ctx context.Context, rec slog.Record) error {
-			if id, ok := MessageID(ctx); ok {
+			if id, ok := GetMessageID(ctx); ok {
 				rec.AddAttrs(slog.String("message.id", id))
 			}
 
@@ -38,7 +38,7 @@ func WithChatID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, chatID{}, id)
 }
 
-func ChatID(ctx context.Context) (string, bool) {
+func GetChatID(ctx context.Context) (string, bool) {
 	value, ok := ctx.Value(chatID{}).(string)
 	return value, ok
 }
@@ -46,7 +46,7 @@ func ChatID(ctx context.Context) (string, bool) {
 func PropagateChatID() slogx.Middleware {
 	return func(next slogx.HandleFunc) slogx.HandleFunc {
 		return func(ctx context.Context, rec slog.Record) error {
-			if id, ok := ChatID(ctx); ok {
+			if id, ok := GetChatID(ctx); ok {
 				rec.AddAttrs(slog.String("chat.id", id))
 			}
 
@@ -59,7 +59,7 @@ func WithCommandName(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, commandName{}, name)
 }
 
-func CommandName(ctx context.Context) (string, bool) {
+func GetCommandName(ctx context.Context) (string, bool) {
 	value, ok := ctx.Value(commandName{}).(string)
 	return value, ok
 }
@@ -67,7 +67,7 @@ func CommandName(ctx context.Context) (string, bool) {
 func PropagateCommandName() slogx.Middleware {
 	return func(next slogx.HandleFunc) slogx.HandleFunc {
 		return func(ctx context.Context, rec slog.Record) error {
-			if name, ok := CommandName(ctx); ok {
+			if name, ok := GetCommandName(ctx); ok {
 				rec.AddAttrs(slog.String("command.name", name))
 			}
 

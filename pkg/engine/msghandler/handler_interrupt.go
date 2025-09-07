@@ -40,8 +40,7 @@ func (h *Handler) tryInterrupt(
 		return nil, nil, fmt.Errorf("find new command: %w", err)
 	}
 
-	slog.DebugContext(
-		ctx,
+	slog.DebugContext(ctx,
 		"[handler] interrupt command, switch to new command",
 		slog.String("from_command.name", currentCommand.Name),
 		slog.String("to_command.name", newCommand.Name),
