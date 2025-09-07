@@ -26,6 +26,7 @@ func (s *memoryStorage) Get(_ context.Context, chatID string) (*State, error) {
 	}
 
 	st.transited = false
+	st.forward = nil
 
 	return st, nil
 }

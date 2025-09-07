@@ -48,6 +48,7 @@ func main() {
 	}
 
 	app.MustAddCommand("add", &addUserCommand{})
+	app.MustAddCommand("delete", &deleteUserCommand{})
 
 	go func() {
 		mux := http.NewServeMux()
@@ -129,5 +130,68 @@ func (addUserCommand) Actions() *command.Actions {
 					state.Get("user.type"),
 				),
 			})
+		})
+}
+
+type deleteUserCommand struct {
+	command.AlwaysInterruptCommand
+}
+
+func (deleteUserCommand) Description() string { return "deleteUser" }
+
+func (deleteUserCommand) Actions() *command.Actions {
+	return command.NewActions().
+		With("confirmed", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
+			build(
+				func(_ context.Context, message messenger.Message, _ *state.State) error {
+					return message.Respond(&messenger.Answer{
+						Text: "User deleted",
+					})
+				}).
+				Then("after_deletion", func(_ context.Context, message messenger.Message, _ *state.State) error {
+					return message.Respond(&messenger.Answer{
+						Text: "12345678",
+					})
+				})
+		}).
+		With("canceled", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
+			build(func(_ context.Context, message messenger.Message, _ *state.State) error {
+				return message.Respond(&messenger.Answer{
+					Text: "Deletion canceled",
+				})
+			})
+		}).
+		Then("start", func(_ context.Context, message messenger.Message, _ *state.State) error {
+			return message.Respond(&messenger.Answer{
+				Text: "Select user",
+				Enum: messenger.Enum{
+					Values: map[string]string{
+						"id-1": "John",
+						"id-2": "Alex",
+					},
+				},
+			})
+		}).
+		Then("confirming", func(_ context.Context, message messenger.Message, state *state.State) error {
+			state.Set("user.id", message.GetBody())
+
+			return message.Respond(&messenger.Answer{
+				Text: fmt.Sprintf("Delete user %q?", state.Get("user.id")),
+				Enum: messenger.Enum{
+					Values: map[string]string{
+						"true":  "Yes",
+						"false": "No",
+					},
+				},
+			})
+		}).
+		Then("confirming.dispatch", func(_ context.Context, message messenger.Message, state *state.State) error {
+			if message.GetBody() == "true" {
+				state.Forward("confirmed")
+			} else {
+				state.Forward("canceled")
+			}
+
+			return nil
 		})
 }

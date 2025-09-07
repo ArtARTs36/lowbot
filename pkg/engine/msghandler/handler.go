@@ -122,6 +122,10 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 		return fmt.Errorf("put state: %w", err)
 	}
 
+	if mState.Forwarded() != nil {
+		return h.handle(ctx, message)
+	}
+
 	return nil
 }
 

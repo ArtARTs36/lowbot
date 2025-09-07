@@ -12,6 +12,8 @@ type Actions struct {
 	actionsMap map[string]*action
 }
 
+type ActionCallback func(ctx context.Context, message messenger.Message, state *state.State) error
+
 func NewActions() *Actions {
 	return &Actions{
 		actions:    []*action{},
@@ -19,9 +21,17 @@ func NewActions() *Actions {
 	}
 }
 
+func (a *Actions) With(stateName string, build actionBuild) *Actions {
+	build(func(callback ActionCallback) *ActionBuilder {
+		return newActionBuilder(stateName, a).do(callback)
+	})
+
+	return a
+}
+
 func (a *Actions) Then(
 	stateName string,
-	fn func(ctx context.Context, message messenger.Message, state *state.State) error,
+	fn ActionCallback,
 ) *Actions {
 	act := &action{
 		stateName: stateName,

@@ -7,11 +7,20 @@ type State struct {
 	name        string
 	commandName string
 
+	forward   *Forward
 	transited bool
 
 	data map[string]string
 
 	startedAt time.Time
+}
+
+type Forward struct {
+	newStateName string
+}
+
+func (f *Forward) NewStateName() string {
+	return f.newStateName
 }
 
 func NewState(chatID string, commandName string) *State {
@@ -74,4 +83,15 @@ func (m *State) StartedAt() time.Time {
 
 func (m *State) Duration() time.Duration {
 	return time.Since(m.startedAt)
+}
+
+func (m *State) Forward(newStateName string) {
+	m.forward = &Forward{
+		newStateName: newStateName,
+	}
+	m.Transit(newStateName)
+}
+
+func (m *State) Forwarded() *Forward {
+	return m.forward
 }
