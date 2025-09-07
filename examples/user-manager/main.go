@@ -25,7 +25,7 @@ func main() {
 
 	app := application.New(
 		msgr,
-		state.NewMemoryStorage(),
+		application.WithCommandSuggestion(),
 	)
 
 	app.AddCommand("add", &addUserCommand{})

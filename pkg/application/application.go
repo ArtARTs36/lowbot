@@ -22,14 +22,29 @@ type Application struct {
 
 func New(
 	msngr messenger.Messenger,
-	stateStorage state.Storage,
+	opts ...Option,
 ) *Application {
+	cfg := &config{
+		storage: state.NewMemoryStorage(),
+		commandNotFoundFallback: func(router.Router) msghandler.CommandNotFoundFallback {
+			return msghandler.ErrorCommandNotFoundFallback()
+		},
+	}
+
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
 	app := &Application{
 		router: router.NewMapStaticRouter(),
 		msngr:  msngr,
 	}
 
-	app.handler = msghandler.NewHandler(app.router, stateStorage, msghandler.SuggestCommandNotFoundFallback(app.router))
+	app.handler = msghandler.NewHandler(
+		app.router,
+		cfg.storage,
+		cfg.commandNotFoundFallback(app.router),
+	)
 
 	app.prepareHTTPServer()
 
