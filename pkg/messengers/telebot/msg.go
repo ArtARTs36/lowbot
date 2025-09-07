@@ -45,7 +45,7 @@ func (m *message) Respond(answer *messenger.Answer) error {
 	}
 
 	if len(answer.Enum) > 0 {
-		opts = append(opts, answer.Enum)
+		opts = append(opts, m.buildEnumOpt(answer.Enum))
 	}
 
 	return m.ctx.Send(what, opts...)

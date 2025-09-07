@@ -18,6 +18,9 @@ type Router interface {
 	// Find command by message.
 	// Throws ErrCommandNotFound.
 	Find(cmdName string) (*NamedCommand, error)
+
+	// List commands.
+	List() []*NamedCommand
 }
 
 type NamedCommand struct {

@@ -29,7 +29,7 @@ func New(
 		msngr:  msngr,
 	}
 
-	app.handler = msghandler.NewHandler(app.router, stateStorage, msghandler.DefaultCommandNotFoundFallback())
+	app.handler = msghandler.NewHandler(app.router, stateStorage, msghandler.SuggestCommandNotFoundFallback(app.router))
 
 	app.prepareHTTPServer()
 

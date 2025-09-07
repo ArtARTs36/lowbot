@@ -36,3 +36,11 @@ func (r *MapStaticRouter) Find(cmdName string) (*NamedCommand, error) {
 
 	return cmd, nil
 }
+
+func (r *MapStaticRouter) List() []*NamedCommand {
+	result := make([]*NamedCommand, 0, len(r.commands))
+	for _, cmd := range r.commands {
+		result = append(result, cmd)
+	}
+	return result
+}
