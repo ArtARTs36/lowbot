@@ -68,10 +68,22 @@ func (addUserCommand) Actions() *command.Actions {
 			state.Set("user.email", message.GetBody())
 
 			return message.Respond(&messenger.Answer{
+				Text: "Select user type",
+				Enum: []string{
+					"internal",
+					"external",
+				},
+			})
+		}).
+		Then("type", func(ctx context.Context, message messenger.Message, state *state.State) error {
+			state.Set("user.type", message.GetBody())
+
+			return message.Respond(&messenger.Answer{
 				Text: fmt.Sprintf(
-					"name: %s, category: %s",
+					"name: %s, email: %s, type: %s",
 					state.Get("user.name"),
 					state.Get("user.email"),
+					state.Get("user.type"),
 				),
 			})
 		})

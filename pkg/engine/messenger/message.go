@@ -12,4 +12,5 @@ type Message interface {
 
 type Answer struct {
 	Text string
+	Enum []string
 }

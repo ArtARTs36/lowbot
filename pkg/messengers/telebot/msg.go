@@ -37,7 +37,18 @@ func (m *message) GetBody() string {
 }
 
 func (m *message) Respond(answer *messenger.Answer) error {
-	return m.ctx.Send(answer.Text)
+	var what interface{}
+	var opts []interface{}
+
+	if answer.Text != "" {
+		what = answer.Text
+	}
+
+	if len(answer.Enum) > 0 {
+		opts = append(opts, answer.Enum)
+	}
+
+	return m.ctx.Send(what, opts...)
 }
 
 func (m *message) ExtractCommandName() string {
@@ -45,4 +56,23 @@ func (m *message) ExtractCommandName() string {
 		return strings.TrimSpace(m.msg.Text[1:])
 	}
 	return ""
+}
+
+func (m *message) buildEnumOpt(enum []string) *telebot.ReplyMarkup {
+	menu := &telebot.ReplyMarkup{
+		ResizeKeyboard:  true,
+		OneTimeKeyboard: true,
+		IsPersistent:    false,
+	}
+
+	rows := make([]telebot.Row, 1)
+	for _, value := range enum {
+		btn := menu.Text(value)
+
+		rows[0] = append(rows[0], btn)
+	}
+
+	menu.Reply(rows...)
+
+	return menu
 }
