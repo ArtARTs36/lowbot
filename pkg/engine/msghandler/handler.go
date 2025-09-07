@@ -63,7 +63,9 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 		return fmt.Errorf("determine command and state: %w", err)
 	}
 
-	slog.DebugContext(ctx, "[handler] find action", slog.String("command.name", cmd.Name))
+	ctx = logx.WithCommandName(ctx, cmd.Name)
+
+	slog.DebugContext(ctx, "[handler] find action")
 
 	act, err := h.findAction(mState, cmd.Command)
 	if err != nil {
@@ -73,7 +75,6 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	slog.DebugContext(
 		ctx,
 		"[handler] action found",
-		slog.String("command.name", cmd.Name),
 		slog.String("state.name", act.State()),
 	)
 

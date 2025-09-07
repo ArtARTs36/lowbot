@@ -8,8 +8,9 @@ import (
 )
 
 type (
-	messageID struct{}
-	chatID    struct{}
+	messageID   struct{}
+	chatID      struct{}
+	commandName struct{}
 )
 
 func WithMessageID(ctx context.Context, id string) context.Context {
@@ -47,6 +48,27 @@ func PropagateChatID() slogx.Middleware {
 		return func(ctx context.Context, rec slog.Record) error {
 			if id, ok := ChatID(ctx); ok {
 				rec.AddAttrs(slog.String("chat.id", id))
+			}
+
+			return next(ctx, rec)
+		}
+	}
+}
+
+func WithCommandName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, commandName{}, name)
+}
+
+func CommandName(ctx context.Context) (string, bool) {
+	value, ok := ctx.Value(commandName{}).(string)
+	return value, ok
+}
+
+func PropagateCommandName() slogx.Middleware {
+	return func(next slogx.HandleFunc) slogx.HandleFunc {
+		return func(ctx context.Context, rec slog.Record) error {
+			if name, ok := CommandName(ctx); ok {
+				rec.AddAttrs(slog.String("command.name", name))
 			}
 
 			return next(ctx, rec)

@@ -23,6 +23,7 @@ func main() {
 		}),
 		logx.PropagateMessageID(),
 		logx.PropagateChatID(),
+		logx.PropagateCommandName(),
 	))))
 
 	msgr, err := createMessenger()
