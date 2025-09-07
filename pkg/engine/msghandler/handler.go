@@ -178,27 +178,10 @@ func (h *Handler) determineCommandAndState(
 
 	slog.DebugContext(ctx, "[handler] command found", slog.String("command.name", cmd.Name))
 
-	messageCommandName := message.ExtractCommandName()
-	if messageCommandName != "" && messageCommandName != mState.CommandName() {
-		allow, ierr := cmd.Command.Interrupt(ctx, message, mState.CommandName(), messageCommandName)
-		if ierr != nil {
-			return nil, nil, fmt.Errorf("defines interruption: %w", ierr)
-		}
-
-		if allow {
-			cmd, err = h.router.Find(messageCommandName)
-			if err != nil {
-				return nil, nil, fmt.Errorf("find new command: %w", err)
-			}
-
-			slog.DebugContext(
-				ctx,
-				"[handler] interrupt command, switch to new command",
-				slog.String("old_command.name", mState.CommandName()),
-				slog.String("new_command.name", cmd.Name),
-			)
-
-			mState = state.NewState(message.GetChatID(), cmd.Name)
+	if h.detectInterrupt(message, mState) {
+		cmd, mState, err = h.tryInterrupt(ctx, cmd, message, mState)
+		if err != nil {
+			return nil, nil, fmt.Errorf("try interrupt: %w", err)
 		}
 	}
 
