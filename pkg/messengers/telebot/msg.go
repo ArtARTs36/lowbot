@@ -3,6 +3,7 @@ package telebot
 import (
 	"fmt"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/pkg/messengers/telebot/callback"
 	"gopkg.in/telebot.v4"
 	"log/slog"
 	"strconv"
@@ -34,18 +35,25 @@ func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message
 		text:   clb.Message.Text,
 	}
 
-	clbID, ok := parseCallbackID(clb.Data)
-	slog.Debug("parsed callback data", slog.String("type", string(clbID.Type)), slog.Any("data", clbID.Values))
-	if ok {
-		switch clbID.Type {
-		case callbackTypeEnum:
+	slog.Debug("parsing callback data", slog.Any("data", clb.Data))
+
+	clbID := callback.ParseID(clb.Data)
+	if clbID != nil {
+		slog.Debug(
+			"callback data parsed: %T",
+			slog.Any("data", clbID),
+			clbID,
+		)
+
+		switch v := clbID.(type) {
+		case *callback.PassEnumValue:
 			slog.Debug(
 				"use enum value from callback",
-				slog.String("callback.id", clbID.ID),
-				slog.String("value", clbID.Values[0]),
+				slog.String("callback.id", clbID.String()),
+				slog.String("value", v.Value),
 			)
 
-			msg.text = clbID.Values[0]
+			msg.text = v.Value
 		}
 	}
 
@@ -119,7 +127,7 @@ func (m *message) buildEnumOpt(enum messenger.Enum) *telebot.ReplyMarkup {
 	rows := make([]telebot.Row, 1)
 	for value, title := range enum.Values {
 		btn := menu.Text(title)
-		btn.Unique = createEnumCallbackID(value).ID
+		btn.Unique = callback.NewPassEnumValue(value).String()
 
 		rows[0] = append(rows[0], btn)
 	}
