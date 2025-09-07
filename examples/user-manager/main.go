@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/artarts36/lowbot/pkg/application"
 	"github.com/artarts36/lowbot/pkg/engine/command"
@@ -15,6 +19,8 @@ import (
 	"github.com/artarts36/lowbot/pkg/messengers/telebot"
 	"github.com/cappuccinotm/slogx"
 )
+
+const readHTTPTimeout = 30 * time.Second
 
 func main() {
 	slog.SetDefault(slog.New(slogx.Accumulator(slogx.NewChain(
@@ -42,6 +48,20 @@ func main() {
 	}
 
 	app.MustAddCommand("add", &addUserCommand{})
+
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		server := http.Server{
+			Addr:              ":8081",
+			Handler:           mux,
+			ReadHeaderTimeout: readHTTPTimeout,
+		}
+
+		if merr := server.ListenAndServe(); merr != nil {
+			slog.Error("failed to start metrics server", slog.Any("err", merr))
+		}
+	}()
 
 	if err = app.Run(); err != nil {
 		slog.Error("failed to run application", slog.Any("err", err))

@@ -1,10 +1,11 @@
 package application
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
 	"github.com/artarts36/lowbot/pkg/engine/router"
 	"github.com/artarts36/lowbot/pkg/engine/state"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 type config struct {
@@ -53,11 +54,5 @@ func WithRouter(router router.Router) Option {
 func WithPrometheus(registerer prometheus.Registerer) Option {
 	return func(c *config) {
 		c.prometheusRegisterer = registerer
-	}
-}
-
-func WithMetricsHTTPAddr(addr string) Option {
-	return func(c *config) {
-		c.metricsHTTPAddr = addr
 	}
 }

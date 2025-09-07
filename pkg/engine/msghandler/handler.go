@@ -115,6 +115,8 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 		mState.Transit(nextAct.State())
 	}
 
+	h.metrics.IncCommandStateTransition(cmd.Name, act.State(), mState.Name())
+
 	err = h.stateStorage.Put(ctx, mState)
 	if err != nil {
 		return fmt.Errorf("put state: %w", err)

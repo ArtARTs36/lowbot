@@ -8,15 +8,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/artarts36/lowbot/pkg/metrics"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
 	"github.com/artarts36/lowbot/pkg/engine/router"
 	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 	sloghttp "github.com/samber/slog-http"
 )
 
@@ -25,8 +23,7 @@ type Application struct {
 	handler *msghandler.Handler
 	msngr   messenger.Messenger
 
-	server        *http.Server
-	metricsServer *http.Server
+	server *http.Server
 }
 
 func New(
@@ -67,7 +64,6 @@ func New(
 	)
 
 	app.prepareHTTPServer(cfg.httpAddr)
-	app.prepareMetricsServer(cfg.metricsHTTPAddr)
 
 	return app, nil
 }
@@ -108,12 +104,6 @@ func (app *Application) Run() error {
 		close(ch)
 	}()
 
-	go func() {
-		if err := app.metricsServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("[application] failed to start metrics server", slog.Any("err", err))
-		}
-	}()
-
 	slog.Info("[application] listen http server", slog.String("addr", app.server.Addr))
 
 	return app.server.ListenAndServe()
@@ -142,19 +132,6 @@ func (app *Application) prepareHTTPServer(addr string) {
 	mux.Handle("/", log(app.msngr))
 
 	app.server = &http.Server{
-		Addr:              addr,
-		Handler:           mux,
-		ReadHeaderTimeout: readTimeout,
-	}
-}
-
-func (app *Application) prepareMetricsServer(addr string) {
-	const readTimeout = 30 * time.Second
-
-	mux := http.NewServeMux()
-	mux.Handle("/metrics", promhttp.Handler())
-
-	app.metricsServer = &http.Server{
 		Addr:              addr,
 		Handler:           mux,
 		ReadHeaderTimeout: readTimeout,

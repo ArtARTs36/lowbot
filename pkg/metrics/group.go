@@ -7,8 +7,9 @@ import (
 )
 
 type Group struct {
-	commandFinished  *prometheus.CounterVec
-	commandExecution *prometheus.HistogramVec
+	commandFinished         *prometheus.CounterVec
+	commandExecution        *prometheus.HistogramVec
+	commandStateTransitions *prometheus.CounterVec
 }
 
 func NewGroup(namespace string) *Group {
@@ -24,17 +25,24 @@ func NewGroup(namespace string) *Group {
 			Help:      "Time taken to execute commands",
 			Buckets:   []float64{1, 5, 15, 30, 60, 90, 120, 150, 180},
 		}, []string{"command"}),
+		commandStateTransitions: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "command_state_transitions_total",
+			Help:      "Count of transitions",
+		}, []string{"command", "from_state", "to_state"}),
 	}
 }
 
 func (g *Group) Describe(ch chan<- *prometheus.Desc) {
 	g.commandFinished.Describe(ch)
 	g.commandExecution.Describe(ch)
+	g.commandStateTransitions.Describe(ch)
 }
 
 func (g *Group) Collect(ch chan<- prometheus.Metric) {
 	g.commandFinished.Collect(ch)
 	g.commandExecution.Collect(ch)
+	g.commandStateTransitions.Collect(ch)
 }
 
 func (g *Group) IncCommandFinished(command string) {
@@ -43,4 +51,8 @@ func (g *Group) IncCommandFinished(command string) {
 
 func (g *Group) ObserveCommandExecution(command string, execution time.Duration) {
 	g.commandExecution.WithLabelValues(command).Observe(float64(execution))
+}
+
+func (g *Group) IncCommandStateTransition(command, fromState, toState string) {
+	g.commandStateTransitions.WithLabelValues(command, fromState, toState).Inc()
 }
