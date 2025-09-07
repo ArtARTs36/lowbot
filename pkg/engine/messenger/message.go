@@ -7,5 +7,9 @@ type Message interface {
 
 	ExtractCommandName() string
 
-	RespondText(answer string) error
+	Respond(answer *Answer) error
+}
+
+type Answer struct {
+	Text string
 }

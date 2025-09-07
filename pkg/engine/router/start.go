@@ -43,7 +43,9 @@ func (c *startCommand) Actions() *command.Actions {
 				i++
 			}
 
-			return message.RespondText(strings.Join(text, "\n"))
+			return message.Respond(&messenger.Answer{
+				Text: strings.Join(text, "\n"),
+			})
 		},
 	)
 }

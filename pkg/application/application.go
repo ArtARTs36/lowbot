@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"github.com/artarts36/lowbot/pkg/engine/command"
-	messenger2 "github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
-	router2 "github.com/artarts36/lowbot/pkg/engine/router"
+	"github.com/artarts36/lowbot/pkg/engine/router"
 	"github.com/artarts36/lowbot/pkg/engine/state"
 	sloghttp "github.com/samber/slog-http"
 	"log/slog"
@@ -14,24 +14,22 @@ import (
 )
 
 type Application struct {
-	router  router2.Router
+	router  router.Router
 	handler *msghandler.Handler
-	msngr   messenger2.Messenger
+	msngr   messenger.Messenger
 	server  *http.Server
 }
 
 func New(
-	msngr messenger2.Messenger,
+	msngr messenger.Messenger,
 	stateStorage state.Storage,
 ) *Application {
 	app := &Application{
-		router: router2.NewMapStaticRouter(),
+		router: router.NewMapStaticRouter(),
 		msngr:  msngr,
 	}
 
-	app.handler = msghandler.NewHandler(app.router, stateStorage, func(ctx context.Context, message messenger2.Message) error {
-		return message.RespondText("Команда не найдена")
-	})
+	app.handler = msghandler.NewHandler(app.router, stateStorage, msghandler.DefaultCommandNotFoundFallback())
 
 	app.prepareHTTPServer()
 
@@ -39,14 +37,14 @@ func New(
 }
 
 func (app *Application) AddCommand(cmdName string, cmd command.Command) error {
-	return app.router.Add(&router2.NamedCommand{
+	return app.router.Add(&router.NamedCommand{
 		Name:    cmdName,
 		Command: cmd,
 	})
 }
 
 func (app *Application) Run() error {
-	ch := make(chan messenger2.Message)
+	ch := make(chan messenger.Message)
 
 	go func() {
 		for msg := range ch {

@@ -65,7 +65,9 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	if err != nil {
 		validErr := &command.ValidationError{}
 		if errors.As(err, &validErr) {
-			return message.RespondText(validErr.Text)
+			return message.Respond(&messenger.Answer{
+				Text: validErr.Text,
+			})
 		}
 
 		return fmt.Errorf("run action: %w", err)

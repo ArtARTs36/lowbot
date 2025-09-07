@@ -7,8 +7,10 @@ import (
 
 type CommandNotFoundFallback func(ctx context.Context, message messenger.Message) error
 
-func defaultCommandNotFoundFallback() CommandNotFoundFallback {
+func DefaultCommandNotFoundFallback() CommandNotFoundFallback {
 	return func(ctx context.Context, message messenger.Message) error {
-		return message.RespondText("Команда не найдена")
+		return message.Respond(&messenger.Answer{
+			Text: "Команда не найдена",
+		})
 	}
 }

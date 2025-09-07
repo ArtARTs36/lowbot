@@ -1,6 +1,7 @@
 package telebot
 
 import (
+	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"gopkg.in/telebot.v4"
 	"strconv"
 	"strings"
@@ -35,8 +36,8 @@ func (m *message) GetBody() string {
 	return m.msg.Text
 }
 
-func (m *message) RespondText(answer string) error {
-	return m.ctx.Send(answer)
+func (m *message) Respond(answer *messenger.Answer) error {
+	return m.ctx.Send(answer.Text)
 }
 
 func (m *message) ExtractCommandName() string {

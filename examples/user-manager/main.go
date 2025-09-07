@@ -49,12 +49,16 @@ func (addUserCommand) Description() string { return "addUser" }
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(ctx context.Context, message messenger.Message, state *state.State) error {
-			return message.RespondText("Enter user name")
+			return message.Respond(&messenger.Answer{
+				Text: "Enter user name",
+			})
 		}).
 		Then("name", func(ctx context.Context, message messenger.Message, state *state.State) error {
 			state.Set("user.name", message.GetBody())
 
-			return message.RespondText("Enter email")
+			return message.Respond(&messenger.Answer{
+				Text: "Enter email",
+			})
 		}).
 		Then("email", func(ctx context.Context, message messenger.Message, state *state.State) error {
 			if !strings.Contains(message.GetBody(), "@") {
@@ -63,10 +67,12 @@ func (addUserCommand) Actions() *command.Actions {
 
 			state.Set("user.email", message.GetBody())
 
-			return message.RespondText(fmt.Sprintf(
-				"name: %s, category: %s",
-				state.Get("user.name"),
-				state.Get("user.email"),
-			))
+			return message.Respond(&messenger.Answer{
+				Text: fmt.Sprintf(
+					"name: %s, category: %s",
+					state.Get("user.name"),
+					state.Get("user.email"),
+				),
+			})
 		})
 }
