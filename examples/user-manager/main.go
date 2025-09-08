@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/artarts36/lowbot/pkg/middleware"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/artarts36/lowbot/pkg/application"
@@ -40,10 +42,13 @@ func main() {
 		msgr,
 		application.WithCommandSuggestion(),
 		application.WithHTTPAddr(":9005"),
-		application.WithMiddleware(func(ctx context.Context, req *command.Request, next command.ActionCallback) error {
-			slog.InfoContext(ctx, "[main] handling request", slog.Any("req", req))
-			return next(ctx, req)
-		}),
+		application.WithMiddleware(
+			func(ctx context.Context, req *command.Request, next command.ActionCallback) error {
+				slog.InfoContext(ctx, "[main] handling request", slog.Any("req", req))
+				return next(ctx, req)
+			},
+			middleware.OnlyChatIDs([]string{"493731328"}),
+		),
 	)
 	if err != nil {
 		slog.Error("failed to create application", slog.Any("err", err))

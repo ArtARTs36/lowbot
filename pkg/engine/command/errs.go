@@ -11,3 +11,15 @@ func NewValidationError(text string) *ValidationError {
 func (e *ValidationError) Error() string {
 	return e.Text
 }
+
+type AccessDeniedError struct {
+	Message string
+}
+
+func NewAccessDeniedError(message string) *AccessDeniedError {
+	return &AccessDeniedError{Message: message}
+}
+
+func (e *AccessDeniedError) Error() string {
+	return e.Message
+}

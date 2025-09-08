@@ -89,6 +89,15 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 			})
 		}
 
+		accessDeniedErr := &command.AccessDeniedError{}
+		if errors.As(err, &accessDeniedErr) {
+			slog.InfoContext(ctx, "[handler] access denied for user")
+
+			return message.Respond(&messenger.Answer{
+				Text: accessDeniedErr.Message,
+			})
+		}
+
 		return fmt.Errorf("run action: %w", err)
 	}
 
