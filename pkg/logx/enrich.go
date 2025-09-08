@@ -23,15 +23,7 @@ func GetMessageID(ctx context.Context) (string, bool) {
 }
 
 func PropagateMessageID() slogx.Middleware {
-	return func(next slogx.HandleFunc) slogx.HandleFunc {
-		return func(ctx context.Context, rec slog.Record) error {
-			if id, ok := GetMessageID(ctx); ok {
-				rec.AddAttrs(slog.String("message.id", id))
-			}
-
-			return next(ctx, rec)
-		}
-	}
+	return propagate("message.id", GetMessageID)
 }
 
 func WithChatID(ctx context.Context, id string) context.Context {
@@ -44,15 +36,7 @@ func GetChatID(ctx context.Context) (string, bool) {
 }
 
 func PropagateChatID() slogx.Middleware {
-	return func(next slogx.HandleFunc) slogx.HandleFunc {
-		return func(ctx context.Context, rec slog.Record) error {
-			if id, ok := GetChatID(ctx); ok {
-				rec.AddAttrs(slog.String("chat.id", id))
-			}
-
-			return next(ctx, rec)
-		}
-	}
+	return propagate("chat.id", GetChatID)
 }
 
 func WithCommandName(ctx context.Context, name string) context.Context {
@@ -65,10 +49,14 @@ func GetCommandName(ctx context.Context) (string, bool) {
 }
 
 func PropagateCommandName() slogx.Middleware {
+	return propagate("command.name", GetCommandName)
+}
+
+func propagate(key string, value func(ctx context.Context) (string, bool)) slogx.Middleware {
 	return func(next slogx.HandleFunc) slogx.HandleFunc {
 		return func(ctx context.Context, rec slog.Record) error {
-			if name, ok := GetCommandName(ctx); ok {
-				rec.AddAttrs(slog.String("command.name", name))
+			if v, ok := value(ctx); ok {
+				rec.AddAttrs(slog.String(key, v))
 			}
 
 			return next(ctx, rec)

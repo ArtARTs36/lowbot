@@ -14,7 +14,6 @@ import (
 	"github.com/artarts36/lowbot/pkg/application"
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/state"
 	"github.com/artarts36/lowbot/pkg/logx"
 	"github.com/artarts36/lowbot/pkg/messengers/telebot"
 	"github.com/cappuccinotm/slogx"
@@ -83,33 +82,33 @@ type addUserCommand struct {
 func (addUserCommand) Description() string { return "addUser" }
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
-		Then("start", func(_ context.Context, message messenger.Message, _ *state.State) error {
-			err := message.RespondObject(&messenger.LocalImage{
+		Then("start", func(_ context.Context, req *command.Request) error {
+			err := req.Message.RespondObject(&messenger.LocalImage{
 				Path: "./examples/user-manager/image.jpg",
 			})
 			if err != nil {
 				return fmt.Errorf("send image: %w", err)
 			}
 
-			return message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messenger.Answer{
 				Text: "Enter user name",
 			})
 		}).
-		Then("name", func(_ context.Context, message messenger.Message, state *state.State) error {
-			state.Set("user.name", message.GetBody())
+		Then("name", func(_ context.Context, req *command.Request) error {
+			req.State.Set("user.name", req.Message.GetBody())
 
-			return message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messenger.Answer{
 				Text: "Enter email",
 			})
 		}).
-		Then("email", func(_ context.Context, message messenger.Message, state *state.State) error {
-			if !strings.Contains(message.GetBody(), "@") {
+		Then("email", func(_ context.Context, req *command.Request) error {
+			if !strings.Contains(req.Message.GetBody(), "@") {
 				return command.NewValidationError("invalid email")
 			}
 
-			state.Set("user.email", message.GetBody())
+			req.State.Set("user.email", req.Message.GetBody())
 
-			return message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messenger.Answer{
 				Text: "Select user type",
 				Enum: messenger.Enum{
 					Values: map[string]string{
@@ -119,15 +118,15 @@ func (addUserCommand) Actions() *command.Actions {
 				},
 			})
 		}).
-		Then("type", func(_ context.Context, message messenger.Message, state *state.State) error {
-			state.Set("user.type", message.GetBody())
+		Then("type", func(_ context.Context, req *command.Request) error {
+			req.State.Set("user.type", req.Message.GetBody())
 
-			return message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messenger.Answer{
 				Text: fmt.Sprintf(
 					"name: %s, email: %s, type: %s",
-					state.Get("user.name"),
-					state.Get("user.email"),
-					state.Get("user.type"),
+					req.State.Get("user.name"),
+					req.State.Get("user.email"),
+					req.State.Get("user.type"),
 				),
 			})
 		})
@@ -143,26 +142,26 @@ func (deleteUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		With("confirmed", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
 			build(
-				func(_ context.Context, message messenger.Message, _ *state.State) error {
-					return message.Respond(&messenger.Answer{
+				func(_ context.Context, req *command.Request) error {
+					return req.Message.Respond(&messenger.Answer{
 						Text: "User deleted",
 					})
 				}).
-				Then("after_deletion", func(_ context.Context, message messenger.Message, _ *state.State) error {
-					return message.Respond(&messenger.Answer{
+				Then("after_deletion", func(_ context.Context, req *command.Request) error {
+					return req.Message.Respond(&messenger.Answer{
 						Text: "12345678",
 					})
 				})
 		}).
 		With("canceled", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
-			build(func(_ context.Context, message messenger.Message, _ *state.State) error {
-				return message.Respond(&messenger.Answer{
+			build(func(_ context.Context, req *command.Request) error {
+				return req.Message.Respond(&messenger.Answer{
 					Text: "Deletion canceled",
 				})
 			})
 		}).
-		Then("start", func(_ context.Context, message messenger.Message, _ *state.State) error {
-			return message.Respond(&messenger.Answer{
+		Then("start", func(_ context.Context, req *command.Request) error {
+			return req.Message.Respond(&messenger.Answer{
 				Text: "Select user",
 				Enum: messenger.Enum{
 					Values: map[string]string{
@@ -172,11 +171,11 @@ func (deleteUserCommand) Actions() *command.Actions {
 				},
 			})
 		}).
-		Then("confirming", func(_ context.Context, message messenger.Message, state *state.State) error {
-			state.Set("user.id", message.GetBody())
+		Then("confirming", func(_ context.Context, req *command.Request) error {
+			req.State.Set("user.id", req.Message.GetBody())
 
-			return message.Respond(&messenger.Answer{
-				Text: fmt.Sprintf("Delete user %q?", state.Get("user.id")),
+			return req.Message.Respond(&messenger.Answer{
+				Text: fmt.Sprintf("Delete user %q?", req.State.Get("user.id")),
 				Enum: messenger.Enum{
 					Values: map[string]string{
 						"true":  "Yes",
@@ -185,11 +184,11 @@ func (deleteUserCommand) Actions() *command.Actions {
 				},
 			})
 		}).
-		Then("confirming.dispatch", func(_ context.Context, message messenger.Message, state *state.State) error {
-			if message.GetBody() == "true" {
-				state.Forward("confirmed")
+		Then("confirming.dispatch", func(_ context.Context, req *command.Request) error {
+			if req.Message.GetBody() == "true" {
+				req.State.Forward("confirmed")
 			} else {
-				state.Forward("canceled")
+				req.State.Forward("canceled")
 			}
 
 			return nil

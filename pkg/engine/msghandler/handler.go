@@ -74,7 +74,10 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 
 	slog.DebugContext(ctx, "[handler] action found", logx.StateName(act.State()))
 
-	err = act.Run(ctx, message, mState)
+	err = act.Run(ctx, &command.Request{
+		Message: message,
+		State:   mState,
+	})
 	if err != nil {
 		validErr := &command.ValidationError{}
 		if errors.As(err, &validErr) {

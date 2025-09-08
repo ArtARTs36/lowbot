@@ -2,9 +2,6 @@ package command
 
 import (
 	"context"
-
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/state"
 )
 
 type Actions struct {
@@ -12,7 +9,7 @@ type Actions struct {
 	actionsMap map[string]*action
 }
 
-type ActionCallback func(ctx context.Context, message messenger.Message, state *state.State) error
+type ActionCallback func(ctx context.Context, req *Request) error
 
 func NewActions() *Actions {
 	return &Actions{

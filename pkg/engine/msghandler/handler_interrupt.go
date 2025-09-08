@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/artarts36/lowbot/pkg/engine/command"
+
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
 	"github.com/artarts36/lowbot/pkg/engine/router"
 	"github.com/artarts36/lowbot/pkg/engine/state"
@@ -24,7 +26,11 @@ func (h *Handler) tryInterrupt(
 ) (*router.NamedCommand, *state.State, error) {
 	desiredCommandName := message.ExtractCommandName()
 
-	allow, err := currentCommand.Command.Interrupt(ctx, message, mState.CommandName(), desiredCommandName)
+	allow, err := currentCommand.Command.Interrupt(ctx, &command.InterruptRequest{
+		Message:      message,
+		CurrentState: mState.CommandName(),
+		NewCommand:   desiredCommandName,
+	})
 	if err != nil {
 		return nil, nil, fmt.Errorf("defines interruption: %w", err)
 	}

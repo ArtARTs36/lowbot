@@ -7,7 +7,6 @@ import (
 
 	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/state"
 )
 
 type startCommand struct {
@@ -31,7 +30,7 @@ func (c *startCommand) Description() string {
 func (c *startCommand) Actions() *command.Actions {
 	return command.NewActions().Then(
 		"start",
-		func(_ context.Context, message messenger.Message, _ *state.State) error {
+		func(_ context.Context, req *command.Request) error {
 			text := make([]string, len(c.router.commands)-1)
 
 			i := 0
@@ -44,7 +43,7 @@ func (c *startCommand) Actions() *command.Actions {
 				i++
 			}
 
-			return message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messenger.Answer{
 				Text: strings.Join(text, "\n"),
 			})
 		},

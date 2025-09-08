@@ -16,11 +16,17 @@ type Command interface {
 
 	// Interrupt defines interruption is allowed.
 	// Returns true, when interrupt allowed
-	Interrupt(ctx context.Context, msg messenger.Message, currentState, newCmd string) (bool, error)
+	Interrupt(ctx context.Context, req *InterruptRequest) (bool, error)
+}
+
+type InterruptRequest struct {
+	Message      messenger.Message
+	CurrentState string
+	NewCommand   string
 }
 
 type AlwaysInterruptCommand struct{}
 
-func (c *AlwaysInterruptCommand) Interrupt(_ context.Context, _ messenger.Message, _, _ string) (bool, error) {
+func (c *AlwaysInterruptCommand) Interrupt(context.Context, *InterruptRequest) (bool, error) {
 	return true, nil
 }
