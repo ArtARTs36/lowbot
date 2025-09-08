@@ -38,9 +38,9 @@ func New(
 			return msghandler.ErrorCommandNotFoundFallback()
 		},
 		httpAddr:             ":8080",
-		metricsHTTPAddr:      ":8081",
 		router:               router.NewMapStaticRouter(),
 		prometheusRegisterer: prometheus.DefaultRegisterer,
+		middlewares:          make([]command.Middleware, 0),
 	}
 
 	for _, opt := range opts {
@@ -63,6 +63,7 @@ func New(
 		cfg.storage,
 		cfg.commandNotFoundFallback(app.router),
 		metricsGroup,
+		command.NewBus(cfg.middlewares),
 	)
 
 	app.prepareHTTPServer(cfg.httpAddr)

@@ -22,6 +22,7 @@ type Handler struct {
 
 	commandNotFoundFallback CommandNotFoundFallback
 	metrics                 *metrics.Group
+	bus                     command.Bus
 }
 
 func NewHandler(
@@ -29,12 +30,14 @@ func NewHandler(
 	stateStorage state.Storage,
 	commandNotFoundFallback CommandNotFoundFallback,
 	metrics *metrics.Group,
+	bus command.Bus,
 ) *Handler {
 	return &Handler{
 		router:                  routes,
 		stateStorage:            stateStorage,
 		commandNotFoundFallback: commandNotFoundFallback,
 		metrics:                 metrics,
+		bus:                     bus,
 	}
 }
 
@@ -74,10 +77,10 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 
 	slog.DebugContext(ctx, "[handler] action found", logx.StateName(act.State()))
 
-	err = act.Run(ctx, &command.Request{
+	err = h.bus.Handle(ctx, &command.Request{
 		Message: message,
 		State:   mState,
-	})
+	}, act)
 	if err != nil {
 		validErr := &command.ValidationError{}
 		if errors.As(err, &validErr) {

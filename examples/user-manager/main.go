@@ -40,6 +40,10 @@ func main() {
 		msgr,
 		application.WithCommandSuggestion(),
 		application.WithHTTPAddr(":9005"),
+		application.WithMiddleware(func(ctx context.Context, req *command.Request, next command.ActionCallback) error {
+			slog.InfoContext(ctx, "[main] handling request", slog.Any("req", req))
+			return next(ctx, req)
+		}),
 	)
 	if err != nil {
 		slog.Error("failed to create application", slog.Any("err", err))

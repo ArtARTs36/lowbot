@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/artarts36/lowbot/pkg/engine/command"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/artarts36/lowbot/pkg/engine/msghandler"
@@ -12,9 +13,9 @@ type config struct {
 	storage                 state.Storage
 	commandNotFoundFallback func(router router.Router) msghandler.CommandNotFoundFallback
 	httpAddr                string
-	metricsHTTPAddr         string
 	router                  router.Router
 	prometheusRegisterer    prometheus.Registerer
+	middlewares             []command.Middleware
 }
 
 type Option func(*config)
@@ -54,5 +55,11 @@ func WithRouter(router router.Router) Option {
 func WithPrometheus(registerer prometheus.Registerer) Option {
 	return func(c *config) {
 		c.prometheusRegisterer = registerer
+	}
+}
+
+func WithMiddleware(middleware ...command.Middleware) Option {
+	return func(c *config) {
+		c.middlewares = append(c.middlewares, middleware...)
 	}
 }
