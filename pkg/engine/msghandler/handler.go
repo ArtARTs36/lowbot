@@ -58,6 +58,26 @@ func (h *Handler) Handle(ctx context.Context, message messenger.Message) error {
 	return nil
 }
 
+func (h *Handler) handleCommandError(ctx context.Context, message messenger.Message, err error) error {
+	validErr := &command.ValidationError{}
+	if errors.As(err, &validErr) {
+		return message.Respond(&messenger.Answer{
+			Text: validErr.Text,
+		})
+	}
+
+	accessDeniedErr := &command.AccessDeniedError{}
+	if errors.As(err, &accessDeniedErr) {
+		slog.InfoContext(ctx, "[handler] access denied for user")
+
+		return message.Respond(&messenger.Answer{
+			Text: accessDeniedErr.Message,
+		})
+	}
+
+	return err
+}
+
 func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	slog.DebugContext(ctx, "[handler] handling message")
 
@@ -82,23 +102,7 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 		State:   mState,
 	}, act)
 	if err != nil {
-		validErr := &command.ValidationError{}
-		if errors.As(err, &validErr) {
-			return message.Respond(&messenger.Answer{
-				Text: validErr.Text,
-			})
-		}
-
-		accessDeniedErr := &command.AccessDeniedError{}
-		if errors.As(err, &accessDeniedErr) {
-			slog.InfoContext(ctx, "[handler] access denied for user")
-
-			return message.Respond(&messenger.Answer{
-				Text: accessDeniedErr.Message,
-			})
-		}
-
-		return fmt.Errorf("run action: %w", err)
+		return h.handleCommandError(ctx, message, err)
 	}
 
 	if !mState.RecentlyTransited() {
@@ -134,6 +138,8 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	}
 
 	if mState.Forwarded() != nil {
+		slog.DebugContext(ctx, "[handler] forwarding", slog.String("to_state", act.State()))
+
 		return h.handle(ctx, message)
 	}
 

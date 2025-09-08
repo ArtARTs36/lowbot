@@ -47,7 +47,7 @@ func main() {
 				slog.InfoContext(ctx, "[main] handling request", slog.Any("req", req))
 				return next(ctx, req)
 			},
-			middleware.OnlyChatIDs([]string{"493731328"}),
+			middleware.OnlyChatsWithMessage([]string{"493731328"}, "denied"),
 		),
 	)
 	if err != nil {
