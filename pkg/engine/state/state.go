@@ -2,6 +2,10 @@ package state
 
 import "time"
 
+const (
+	Passthrough = "lowbot.passthrough" //nolint:gosec //false-positive
+)
+
 type State struct {
 	chatID      string
 	name        string
@@ -85,11 +89,21 @@ func (m *State) Duration() time.Duration {
 	return time.Since(m.startedAt)
 }
 
+// Forward save current state and immediately run action for state {newStateName}.
 func (m *State) Forward(newStateName string) {
 	m.forward = &Forward{
 		newStateName: newStateName,
 	}
 	m.Transit(newStateName)
+}
+
+// Passthrough save current state and immediately run action for next state.
+func (m *State) Passthrough() error {
+	m.forward = &Forward{
+		newStateName: Passthrough,
+	}
+
+	return nil
 }
 
 func (m *State) Forwarded() *Forward {

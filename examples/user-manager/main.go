@@ -57,6 +57,7 @@ func main() {
 
 	app.MustAddCommand("add", &addUserCommand{})
 	app.MustAddCommand("delete", &deleteUserCommand{})
+	app.MustAddCommand("update", &updateUserCommand{})
 
 	go func() {
 		mux := http.NewServeMux()
@@ -201,5 +202,49 @@ func (deleteUserCommand) Actions() *command.Actions {
 			}
 
 			return nil
+		})
+}
+
+type updateUserCommand struct {
+	command.AlwaysInterruptCommand
+}
+
+func (updateUserCommand) Description() string { return "updateUser" }
+
+func (updateUserCommand) Actions() *command.Actions {
+	return command.NewActions().
+		Then("prompt_user", func(_ context.Context, req *command.Request) error {
+			return req.Message.Respond(&messenger.Answer{
+				Text: "Select user",
+				Enum: messenger.Enum{
+					Values: map[string]string{
+						"id-1": "John",
+						"id-2": "Alex",
+					},
+				},
+			})
+		}).
+		Then("saving_user", func(_ context.Context, req *command.Request) error {
+			req.State.Set("user.id", req.Message.GetBody())
+			return req.State.Passthrough()
+		}).
+		Then("prompt_new_email", func(_ context.Context, req *command.Request) error {
+			return req.Message.Respond(&messenger.Answer{
+				Text: "Write new email",
+			})
+		}).
+		Then("saving_new_email", func(_ context.Context, req *command.Request) error {
+			req.State.Set("user.email", req.Message.GetBody())
+			return req.State.Passthrough()
+		}).
+		Then("finished", func(_ context.Context, req *command.Request) error {
+			return req.Message.Respond(&messenger.Answer{
+				Text: fmt.Sprintf(
+					"User %q updated with params: \n"+
+						"* email - %s\n",
+					req.State.Get("user.id"),
+					req.State.Get("user.email"),
+				),
+			})
 		})
 }

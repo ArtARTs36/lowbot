@@ -107,17 +107,9 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 
 	if !mState.RecentlyTransited() {
 		nextAct := act.Next()
+		// stop execution, because next action not found.
 		if nextAct == nil {
-			slog.InfoContext(
-				ctx,
-				"[handler] next state not found",
-				slog.String("state.name", act.State()),
-			)
-
-			h.metrics.IncCommandFinished(mState.CommandName())
-			h.metrics.ObserveCommandExecution(mState.CommandName(), mState.Duration())
-
-			return h.stateStorage.Delete(ctx, mState)
+			return h.finishState(ctx, act, mState)
 		}
 
 		slog.InfoContext(
@@ -138,11 +130,37 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	}
 
 	if mState.Forwarded() != nil {
-		slog.DebugContext(ctx, "[handler] forwarding", slog.String("to_state", act.State()))
-
-		return h.handle(ctx, message)
+		return h.forward(ctx, message, mState, act)
 	}
 
+	return nil
+}
+
+func (h *Handler) forward(
+	ctx context.Context,
+	message messenger.Message,
+	mState *state.State,
+	act command.Action,
+) error {
+	if mState.Forwarded().NewStateName() == state.Passthrough {
+		slog.DebugContext(ctx, "[handler] passthrough", slog.String("to_state", act.Next().State()))
+	} else {
+		slog.DebugContext(ctx, "[handler] forwarding", slog.String("to_state", act.State()))
+	}
+
+	return h.handle(ctx, message)
+}
+
+func (h *Handler) finishState(ctx context.Context, act command.Action, mState *state.State) error {
+	slog.InfoContext(ctx, "[handler] next state not found", slog.String("state.name", act.State()))
+
+	h.metrics.IncCommandFinished(mState.CommandName())
+	h.metrics.ObserveCommandExecution(mState.CommandName(), mState.Duration())
+
+	derr := h.stateStorage.Delete(ctx, mState)
+	if derr != nil {
+		return fmt.Errorf("delete state: %w", derr)
+	}
 	return nil
 }
 
