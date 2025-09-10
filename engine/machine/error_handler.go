@@ -14,26 +14,54 @@ import (
 type ErrorHandler func(ctx context.Context, msg messengerapi.Message, err error) (bool, error)
 
 var (
-	validationErrHandler ErrorHandler = func(_ context.Context, msg messengerapi.Message, err error) (bool, error) {
-		validErr := &command.ValidationError{}
+	invalidArgumentErrHandler ErrorHandler = func(ctx context.Context, msg messengerapi.Message, err error) (bool, error) {
+		validErr := &command.InvalidArgumentError{}
 		if errors.As(err, &validErr) {
-			return true, msg.Respond(&messengerapi.Answer{
+			sendErr := msg.Respond(&messengerapi.Answer{
 				Text: validErr.Text,
 			})
+			if sendErr != nil {
+				slog.ErrorContext(ctx, "[invalid-argument-handler] failed to respond to invalid argument", slog.Any("err", sendErr))
+			}
+
+			return true, err
 		}
 		return false, err
 	}
 
-	accessDeniedErrHandler ErrorHandler = func(ctx context.Context, msg messengerapi.Message, err error) (bool, error) {
-		accessDeniedErr := &command.AccessDeniedError{}
-		if errors.As(err, &accessDeniedErr) {
-			slog.InfoContext(ctx, "[machine] access denied for user")
+	permissionDeniedErrHandler ErrorHandler = func(
+		ctx context.Context,
+		msg messengerapi.Message,
+		err error,
+	) (bool, error) {
+		permissionDeniedErr := &command.PermissionDeniedError{}
+		if errors.As(err, &permissionDeniedErr) {
+			slog.InfoContext(ctx, "[permission-denied-handler] permission denied for user")
 
-			return true, msg.Respond(&messengerapi.Answer{
-				Text: accessDeniedErr.Message,
+			userMsg := permissionDeniedErr.Message
+			if userMsg == "" {
+				userMsg = "Permission denied."
+			}
+
+			sendErr := msg.Respond(&messengerapi.Answer{
+				Text: userMsg,
 			})
+			if sendErr != nil {
+				slog.ErrorContext(ctx, "[permission-denied-handler] failed to send message to user", slog.Any("err", sendErr))
+			}
+
+			return true, err
 		}
 		return false, err
+	}
+
+	internalConvertErrHandler ErrorHandler = func(_ context.Context, _ messengerapi.Message, err error) (bool, error) {
+		internalErr := &command.InternalError{}
+		if errors.As(err, &internalErr) {
+			return true, nil
+		}
+
+		return true, command.NewInternalError(err)
 	}
 )
 
@@ -43,7 +71,11 @@ type compositeErrorHandler struct {
 
 func NewErrorHandler(handler ...ErrorHandler) ErrorHandler {
 	ch := compositeErrorHandler{
-		handlers: append([]ErrorHandler{accessDeniedErrHandler, validationErrHandler}, handler...),
+		handlers: append([]ErrorHandler{
+			permissionDeniedErrHandler,
+			invalidArgumentErrHandler,
+			internalConvertErrHandler,
+		}, handler...),
 	}
 
 	return ch.Handle

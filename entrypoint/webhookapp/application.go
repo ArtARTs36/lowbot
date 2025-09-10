@@ -94,7 +94,12 @@ func (app *Application) Run() error {
 			ctx := context.Background()
 
 			if err := app.machine.Handle(ctx, msg); err != nil {
-				slog.ErrorContext(ctx, "[application] failed to handle message", logx.Err(err))
+				slog.ErrorContext(ctx,
+					"[application] failed to handle message",
+					logx.Err(err),
+					slog.String("message.id", msg.GetID()),
+					slog.String("message.chat_id", msg.GetChatID()),
+				)
 			}
 		}
 	}()

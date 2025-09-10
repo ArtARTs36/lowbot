@@ -50,6 +50,7 @@ func main() {
 				return next(ctx, req)
 			},
 			middleware.OnlyChatsWithMessage([]string{"493731328"}, "denied"),
+			middleware.PleaseRepeatAgain(),
 		),
 	)
 	if err != nil {
@@ -115,7 +116,7 @@ func (addUserCommand) Actions() *command.Actions {
 		}).
 		Then("email", func(_ context.Context, req *command.Request) error {
 			if !strings.Contains(req.Message.GetBody(), "@") {
-				return command.NewValidationError("invalid email")
+				return command.NewInvalidArgumentError("invalid email")
 			}
 
 			req.State.Set("user.email", req.Message.GetBody())

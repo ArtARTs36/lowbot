@@ -81,14 +81,26 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 
 	slog.DebugContext(ctx, "[machine] action found", logx.StateName(act.State()))
 
+	run := func(ctx context.Context, req *command.Request) error {
+		if err = act.Run(ctx, req); err != nil {
+			_, err = h.errorHandler(ctx, message, err)
+			var codeErr command.CodeError
+			if errors.As(err, &codeErr) {
+				h.metrics.IncCommandActionHandled(cmd.Name, act.State(), codeErr.Code())
+			}
+		}
+
+		return err
+	}
+
 	err = h.bus.Handle(ctx, &command.Request{
 		Message: message,
 		State:   mState,
-	}, act)
+	}, run)
 	if err != nil {
-		_, err = h.errorHandler(ctx, message, err)
 		return err
 	}
+	h.metrics.IncCommandActionHandled(cmd.Name, act.State(), "OK")
 
 	if !mState.RecentlyTransited() {
 		nextAct := act.Next()

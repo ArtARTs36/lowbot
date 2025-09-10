@@ -13,6 +13,7 @@ type Group struct {
 	commandStateTransitions *prometheus.CounterVec
 	commandInterruptions    *prometheus.CounterVec
 	commandNotFound         prometheus.Counter
+	commandActionHandled    *prometheus.CounterVec
 }
 
 func NewGroup(namespace string) *Group {
@@ -43,6 +44,11 @@ func NewGroup(namespace string) *Group {
 			Name:      "command_not_found_total",
 			Help:      "Count of Command Not Found",
 		}),
+		commandActionHandled: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "command_action_handled_total",
+			Help:      "Count of Command Action Handled",
+		}, []string{"command", "action", "code"}),
 	}
 }
 
@@ -51,6 +57,8 @@ func (g *Group) Describe(ch chan<- *prometheus.Desc) {
 	g.commandExecution.Describe(ch)
 	g.commandStateTransitions.Describe(ch)
 	g.commandInterruptions.Describe(ch)
+	g.commandNotFound.Describe(ch)
+	g.commandActionHandled.Describe(ch)
 }
 
 func (g *Group) Collect(ch chan<- prometheus.Metric) {
@@ -58,6 +66,8 @@ func (g *Group) Collect(ch chan<- prometheus.Metric) {
 	g.commandExecution.Collect(ch)
 	g.commandStateTransitions.Collect(ch)
 	g.commandInterruptions.Collect(ch)
+	g.commandNotFound.Collect(ch)
+	g.commandActionHandled.Collect(ch)
 }
 
 func (g *Group) IncCommandFinished(command string) {
@@ -78,4 +88,8 @@ func (g *Group) IncCommandInterruption(command, fromState, toCommand string, all
 
 func (g *Group) IncCommandNotFound() {
 	g.commandNotFound.Inc()
+}
+
+func (g *Group) IncCommandActionHandled(command, action string, code string) {
+	g.commandActionHandled.WithLabelValues(command, action, code).Inc()
 }

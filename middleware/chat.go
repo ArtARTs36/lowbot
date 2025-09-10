@@ -12,7 +12,7 @@ func OnlyChatsWithMessage(ids []string, message string) command.Middleware {
 		if slices.Contains(ids, req.Message.GetChatID()) {
 			return next(ctx, req)
 		}
-		return command.NewAccessDeniedError(message)
+		return command.NewPermissionDeniedError(message)
 	}
 }
 
