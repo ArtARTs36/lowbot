@@ -3,12 +3,12 @@ package command
 import (
 	"context"
 
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/engine/state"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
 
 type Request struct {
-	Message messenger.Message
+	Message messengerapi.Message
 	State   *state.State
 }
 

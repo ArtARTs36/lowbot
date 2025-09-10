@@ -1,17 +1,17 @@
 package application
 
 import (
-	"github.com/artarts36/lowbot/pkg/engine/command"
+	"github.com/artarts36/lowbot/engine/command"
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/artarts36/lowbot/pkg/engine/msghandler"
-	"github.com/artarts36/lowbot/pkg/engine/router"
-	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/engine/machine"
+	"github.com/artarts36/lowbot/engine/router"
+	"github.com/artarts36/lowbot/engine/state"
 )
 
 type config struct {
 	storage                 state.Storage
-	commandNotFoundFallback func(router router.Router) msghandler.CommandNotFoundFallback
+	commandNotFoundFallback func(router router.Router) machine.CommandNotFoundFallback
 	httpAddr                string
 	router                  router.Router
 	prometheusRegisterer    prometheus.Registerer
@@ -26,9 +26,9 @@ func WithStateStorage(storage state.Storage) Option {
 	}
 }
 
-func WithCommandNotFoundFallback(fallback msghandler.CommandNotFoundFallback) Option {
+func WithCommandNotFoundFallback(fallback machine.CommandNotFoundFallback) Option {
 	return func(c *config) {
-		c.commandNotFoundFallback = func(_ router.Router) msghandler.CommandNotFoundFallback {
+		c.commandNotFoundFallback = func(_ router.Router) machine.CommandNotFoundFallback {
 			return fallback
 		}
 	}
@@ -36,7 +36,7 @@ func WithCommandNotFoundFallback(fallback msghandler.CommandNotFoundFallback) Op
 
 func WithCommandSuggestion() Option {
 	return func(c *config) {
-		c.commandNotFoundFallback = msghandler.SuggestCommandNotFoundFallback
+		c.commandNotFoundFallback = machine.SuggestCommandNotFoundFallback
 	}
 }
 

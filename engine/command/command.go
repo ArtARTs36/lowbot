@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
 
 type Command interface {
@@ -20,7 +20,7 @@ type Command interface {
 }
 
 type InterruptRequest struct {
-	Message      messenger.Message
+	Message      messengerapi.Message
 	CurrentState string
 	NewCommand   string
 }

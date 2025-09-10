@@ -1,4 +1,4 @@
-package messenger
+package messengerapi
 
 import "net/http"
 

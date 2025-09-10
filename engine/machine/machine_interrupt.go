@@ -1,27 +1,27 @@
-package msghandler
+package machine
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
+	"github.com/artarts36/lowbot/engine/command"
 
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/router"
-	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/engine/router"
+	"github.com/artarts36/lowbot/engine/state"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
 
-func (h *Handler) detectInterrupt(message messenger.Message, mState *state.State) bool {
+func (h *Machine) detectInterrupt(message messengerapi.Message, mState *state.State) bool {
 	messageCommandName := message.ExtractCommandName()
 
 	return messageCommandName != "" && messageCommandName != mState.CommandName()
 }
 
-func (h *Handler) tryInterrupt(
+func (h *Machine) tryInterrupt(
 	ctx context.Context,
 	currentCommand *router.NamedCommand,
-	message messenger.Message,
+	message messengerapi.Message,
 	mState *state.State,
 ) (*router.NamedCommand, *state.State, error) {
 	desiredCommandName := message.ExtractCommandName()

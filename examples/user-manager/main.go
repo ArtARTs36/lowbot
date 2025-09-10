@@ -9,15 +9,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/artarts36/lowbot/pkg/middleware"
+	"github.com/artarts36/lowbot/messenger/tg-telebot/telebot"
+
+	"github.com/artarts36/lowbot/middleware"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/artarts36/lowbot/pkg/application"
-	"github.com/artarts36/lowbot/pkg/engine/command"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/logx"
-	"github.com/artarts36/lowbot/pkg/messengers/telebot"
+	"github.com/artarts36/lowbot/application"
+	"github.com/artarts36/lowbot/engine/command"
+	"github.com/artarts36/lowbot/logx"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 	"github.com/cappuccinotm/slogx"
 )
 
@@ -79,7 +80,7 @@ func main() {
 	}
 }
 
-func createMessenger() (messenger.Messenger, error) {
+func createMessenger() (messengerapi.Messenger, error) {
 	return telebot.NewWebhookMessenger(telebot.WebhookConfig{
 		Token: os.Getenv("TELEGRAM_TOKEN"),
 	})
@@ -93,21 +94,21 @@ func (addUserCommand) Description() string { return "addUser" }
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(_ context.Context, req *command.Request) error {
-			err := req.Message.RespondObject(&messenger.LocalImage{
+			err := req.Message.RespondObject(&messengerapi.LocalImage{
 				Path: "./examples/user-manager/image.jpg",
 			})
 			if err != nil {
 				return fmt.Errorf("send image: %w", err)
 			}
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Enter user name",
 			})
 		}).
 		Then("name", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.name", req.Message.GetBody())
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Enter email",
 			})
 		}).
@@ -118,9 +119,9 @@ func (addUserCommand) Actions() *command.Actions {
 
 			req.State.Set("user.email", req.Message.GetBody())
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Select user type",
-				Enum: messenger.Enum{
+				Enum: messengerapi.Enum{
 					Values: map[string]string{
 						"int": "internal",
 						"ext": "external",
@@ -131,7 +132,7 @@ func (addUserCommand) Actions() *command.Actions {
 		Then("type", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.type", req.Message.GetBody())
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf(
 					"name: %s, email: %s, type: %s",
 					req.State.Get("user.name"),
@@ -153,27 +154,27 @@ func (deleteUserCommand) Actions() *command.Actions {
 		With("confirmed", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
 			build(
 				func(_ context.Context, req *command.Request) error {
-					return req.Message.Respond(&messenger.Answer{
+					return req.Message.Respond(&messengerapi.Answer{
 						Text: "User deleted",
 					})
 				}).
 				Then("after_deletion", func(_ context.Context, req *command.Request) error {
-					return req.Message.Respond(&messenger.Answer{
+					return req.Message.Respond(&messengerapi.Answer{
 						Text: "12345678",
 					})
 				})
 		}).
 		With("canceled", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
 			build(func(_ context.Context, req *command.Request) error {
-				return req.Message.Respond(&messenger.Answer{
+				return req.Message.Respond(&messengerapi.Answer{
 					Text: "Deletion canceled",
 				})
 			})
 		}).
 		Then("start", func(_ context.Context, req *command.Request) error {
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Select user",
-				Enum: messenger.Enum{
+				Enum: messengerapi.Enum{
 					Values: map[string]string{
 						"id-1": "John",
 						"id-2": "Alex",
@@ -184,9 +185,9 @@ func (deleteUserCommand) Actions() *command.Actions {
 		Then("confirming", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.id", req.Message.GetBody())
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf("Delete user %q?", req.State.Get("user.id")),
-				Enum: messenger.Enum{
+				Enum: messengerapi.Enum{
 					Values: map[string]string{
 						"true":  "Yes",
 						"false": "No",
@@ -214,9 +215,9 @@ func (updateUserCommand) Description() string { return "updateUser" }
 func (updateUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("prompt_user", func(_ context.Context, req *command.Request) error {
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Select user",
-				Enum: messenger.Enum{
+				Enum: messengerapi.Enum{
 					Values: map[string]string{
 						"id-1": "John",
 						"id-2": "Alex",
@@ -229,7 +230,7 @@ func (updateUserCommand) Actions() *command.Actions {
 			return req.State.Passthrough()
 		}).
 		Then("prompt_new_email", func(_ context.Context, req *command.Request) error {
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: "Write new email",
 			})
 		}).
@@ -238,7 +239,7 @@ func (updateUserCommand) Actions() *command.Actions {
 			return req.State.Passthrough()
 		}).
 		Then("finished", func(_ context.Context, req *command.Request) error {
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf(
 					"User %q updated with params: \n"+
 						"* email - %s\n",

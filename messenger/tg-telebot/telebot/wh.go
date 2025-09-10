@@ -5,7 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
+
 	tele "gopkg.in/telebot.v4"
 )
 
@@ -14,7 +15,7 @@ type WebhookMessenger struct {
 	bot         *tele.Bot
 }
 
-var _ messenger.Messenger = &WebhookMessenger{}
+var _ messengerapi.Messenger = &WebhookMessenger{}
 
 type WebhookConfig struct {
 	WebhookURL string
@@ -49,7 +50,7 @@ func (s *WebhookMessenger) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.httpHandler.ServeHTTP(w, req)
 }
 
-func (s *WebhookMessenger) Listen(ch chan messenger.Message) error {
+func (s *WebhookMessenger) Listen(ch chan messengerapi.Message) error {
 	slog.Debug("[webhook-messenger] bot starting")
 
 	updates := make(chan tele.Update)
