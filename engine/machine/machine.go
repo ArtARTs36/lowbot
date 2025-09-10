@@ -19,6 +19,7 @@ import (
 type Machine struct {
 	router       router.Router
 	stateStorage state.Storage
+	errorHandler ErrorHandler
 
 	commandNotFoundFallback CommandNotFoundFallback
 	metrics                 *metrics.Group
@@ -28,6 +29,7 @@ type Machine struct {
 func New(
 	routes router.Router,
 	stateStorage state.Storage,
+	errorHandler ErrorHandler,
 	commandNotFoundFallback CommandNotFoundFallback,
 	metrics *metrics.Group,
 	bus command.Bus,
@@ -35,6 +37,7 @@ func New(
 	return &Machine{
 		router:                  routes,
 		stateStorage:            stateStorage,
+		errorHandler:            errorHandler,
 		commandNotFoundFallback: commandNotFoundFallback,
 		metrics:                 metrics,
 		bus:                     bus,
@@ -56,26 +59,6 @@ func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) erro
 		return err
 	}
 	return nil
-}
-
-func (h *Machine) handleCommandError(ctx context.Context, message messengerapi.Message, err error) error {
-	validErr := &command.ValidationError{}
-	if errors.As(err, &validErr) {
-		return message.Respond(&messengerapi.Answer{
-			Text: validErr.Text,
-		})
-	}
-
-	accessDeniedErr := &command.AccessDeniedError{}
-	if errors.As(err, &accessDeniedErr) {
-		slog.InfoContext(ctx, "[machine] access denied for user")
-
-		return message.Respond(&messengerapi.Answer{
-			Text: accessDeniedErr.Message,
-		})
-	}
-
-	return err
 }
 
 func (h *Machine) handle(ctx context.Context, message messengerapi.Message) error {
@@ -102,7 +85,8 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 		State:   mState,
 	}, act)
 	if err != nil {
-		return h.handleCommandError(ctx, message, err)
+		_, err = h.errorHandler(ctx, message, err)
+		return err
 	}
 
 	if !mState.RecentlyTransited() {

@@ -62,6 +62,7 @@ func New(
 	app.machine = machine.New(
 		app.router,
 		cfg.storage,
+		machine.NewErrorHandler(),
 		cfg.commandNotFoundFallback(app.router),
 		metricsGroup,
 		command.NewBus(cfg.middlewares),
