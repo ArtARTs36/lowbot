@@ -53,6 +53,7 @@ func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) erro
 	err := h.handle(ctx, message)
 	if err != nil {
 		if errors.Is(err, router.ErrCommandNotFound) {
+			h.metrics.IncCommandNotFound()
 			return h.commandNotFoundFallback(ctx, message)
 		}
 

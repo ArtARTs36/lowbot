@@ -12,6 +12,7 @@ type Group struct {
 	commandExecution        *prometheus.HistogramVec
 	commandStateTransitions *prometheus.CounterVec
 	commandInterruptions    *prometheus.CounterVec
+	commandNotFound         prometheus.Counter
 }
 
 func NewGroup(namespace string) *Group {
@@ -37,6 +38,11 @@ func NewGroup(namespace string) *Group {
 			Name:      "command_interruptions_total",
 			Help:      "Count of Command Interruptions",
 		}, []string{"from_command", "from_state", "to_command", "allowed"}),
+		commandNotFound: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Name:      "command_not_found_total",
+			Help:      "Count of Command Not Found",
+		}),
 	}
 }
 
@@ -68,4 +74,8 @@ func (g *Group) IncCommandStateTransition(command, fromState, toState string) {
 
 func (g *Group) IncCommandInterruption(command, fromState, toCommand string, allowed bool) {
 	g.commandInterruptions.WithLabelValues(command, fromState, toCommand, strconv.FormatBool(allowed)).Inc()
+}
+
+func (g *Group) IncCommandNotFound() {
+	g.commandNotFound.Inc()
 }
