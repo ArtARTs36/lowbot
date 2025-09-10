@@ -1,29 +1,30 @@
-package msghandler
+package machine
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
+	"github.com/artarts36/lowbot/engine/router"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
+
 	"github.com/agnivade/levenshtein"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/router"
 )
 
 const levenshteinThreshold = 3
 
-type CommandNotFoundFallback func(ctx context.Context, message messenger.Message) error
+type CommandNotFoundFallback func(ctx context.Context, message messengerapi.Message) error
 
 func ErrorCommandNotFoundFallback() CommandNotFoundFallback {
-	return func(_ context.Context, message messenger.Message) error {
-		return message.Respond(&messenger.Answer{
+	return func(_ context.Context, message messengerapi.Message) error {
+		return message.Respond(&messengerapi.Answer{
 			Text: "Command not found.",
 		})
 	}
 }
 
 func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallback {
-	return func(_ context.Context, message messenger.Message) error {
+	return func(_ context.Context, message messengerapi.Message) error {
 		msgCmd := message.ExtractCommandName()
 		result := []string{
 			fmt.Sprintf("Command \"%s\" not found.", msgCmd),
@@ -43,7 +44,7 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 			result = append(result, cmds...)
 		}
 
-		return message.Respond(&messenger.Answer{
+		return message.Respond(&messengerapi.Answer{
 			Text: strings.Join(result, "\n"),
 		})
 	}

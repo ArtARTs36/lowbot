@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
+	"github.com/artarts36/lowbot/engine/command"
 )
 
 func OnlyChatsWithMessage(ids []string, message string) command.Middleware {

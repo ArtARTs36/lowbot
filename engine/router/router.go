@@ -3,7 +3,7 @@ package router
 import (
 	"errors"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
+	"github.com/artarts36/lowbot/engine/command"
 )
 
 var (

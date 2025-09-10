@@ -1,4 +1,4 @@
-package messenger
+package messengerapi
 
 type Answer struct {
 	Text string

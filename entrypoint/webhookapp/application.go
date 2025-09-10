@@ -1,4 +1,4 @@
-package application
+package webhookapp
 
 import (
 	"context"
@@ -8,34 +8,35 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/artarts36/lowbot/pkg/logx"
+	"github.com/artarts36/lowbot/engine/machine"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/msghandler"
-	"github.com/artarts36/lowbot/pkg/engine/router"
-	"github.com/artarts36/lowbot/pkg/engine/state"
-	"github.com/artarts36/lowbot/pkg/metrics"
+	"github.com/artarts36/lowbot/logx"
+
+	"github.com/artarts36/lowbot/engine/command"
+	"github.com/artarts36/lowbot/engine/router"
+	"github.com/artarts36/lowbot/engine/state"
+	"github.com/artarts36/lowbot/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	sloghttp "github.com/samber/slog-http"
 )
 
 type Application struct {
 	router  router.Router
-	handler *msghandler.Handler
-	msngr   messenger.Messenger
+	machine *machine.Machine
+	msngr   messengerapi.Messenger
 
 	server *http.Server
 }
 
 func New(
-	msngr messenger.Messenger,
+	msngr messengerapi.Messenger,
 	opts ...Option,
 ) (*Application, error) {
 	cfg := &config{
 		storage: state.NewMemoryStorage(),
-		commandNotFoundFallback: func(router.Router) msghandler.CommandNotFoundFallback {
-			return msghandler.ErrorCommandNotFoundFallback()
+		commandNotFoundFallback: func(router.Router) machine.CommandNotFoundFallback {
+			return machine.ErrorCommandNotFoundFallback()
 		},
 		httpAddr:             ":8080",
 		router:               router.NewMapStaticRouter(),
@@ -58,9 +59,10 @@ func New(
 		msngr:  msngr,
 	}
 
-	app.handler = msghandler.NewHandler(
+	app.machine = machine.New(
 		app.router,
 		cfg.storage,
+		machine.NewErrorHandler(),
 		cfg.commandNotFoundFallback(app.router),
 		metricsGroup,
 		command.NewBus(cfg.middlewares),
@@ -85,13 +87,13 @@ func (app *Application) MustAddCommand(cmdName string, cmd command.Command) {
 }
 
 func (app *Application) Run() error {
-	ch := make(chan messenger.Message)
+	ch := make(chan messengerapi.Message)
 
 	go func() {
 		for msg := range ch {
 			ctx := context.Background()
 
-			if err := app.handler.Handle(ctx, msg); err != nil {
+			if err := app.machine.Handle(ctx, msg); err != nil {
 				slog.ErrorContext(ctx, "[application] failed to handle message", logx.Err(err))
 			}
 		}

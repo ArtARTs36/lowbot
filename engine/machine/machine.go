@@ -1,4 +1,4 @@
-package msghandler
+package machine
 
 import (
 	"context"
@@ -6,42 +6,45 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/artarts36/lowbot/pkg/metrics"
+	"github.com/artarts36/lowbot/metrics"
 
-	"github.com/artarts36/lowbot/pkg/logx"
+	"github.com/artarts36/lowbot/logx"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/engine/router"
-	"github.com/artarts36/lowbot/pkg/engine/state"
+	"github.com/artarts36/lowbot/engine/command"
+	"github.com/artarts36/lowbot/engine/router"
+	"github.com/artarts36/lowbot/engine/state"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
 
-type Handler struct {
+type Machine struct {
 	router       router.Router
 	stateStorage state.Storage
+	errorHandler ErrorHandler
 
 	commandNotFoundFallback CommandNotFoundFallback
 	metrics                 *metrics.Group
 	bus                     command.Bus
 }
 
-func NewHandler(
+func New(
 	routes router.Router,
 	stateStorage state.Storage,
+	errorHandler ErrorHandler,
 	commandNotFoundFallback CommandNotFoundFallback,
 	metrics *metrics.Group,
 	bus command.Bus,
-) *Handler {
-	return &Handler{
+) *Machine {
+	return &Machine{
 		router:                  routes,
 		stateStorage:            stateStorage,
+		errorHandler:            errorHandler,
 		commandNotFoundFallback: commandNotFoundFallback,
 		metrics:                 metrics,
 		bus:                     bus,
 	}
 }
 
-func (h *Handler) Handle(ctx context.Context, message messenger.Message) error {
+func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) error {
 	ctx = logx.WithMessageID(
 		logx.WithChatID(ctx, message.GetChatID()),
 		message.GetID(),
@@ -58,28 +61,8 @@ func (h *Handler) Handle(ctx context.Context, message messenger.Message) error {
 	return nil
 }
 
-func (h *Handler) handleCommandError(ctx context.Context, message messenger.Message, err error) error {
-	validErr := &command.ValidationError{}
-	if errors.As(err, &validErr) {
-		return message.Respond(&messenger.Answer{
-			Text: validErr.Text,
-		})
-	}
-
-	accessDeniedErr := &command.AccessDeniedError{}
-	if errors.As(err, &accessDeniedErr) {
-		slog.InfoContext(ctx, "[handler] access denied for user")
-
-		return message.Respond(&messenger.Answer{
-			Text: accessDeniedErr.Message,
-		})
-	}
-
-	return err
-}
-
-func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
-	slog.DebugContext(ctx, "[handler] handling message")
+func (h *Machine) handle(ctx context.Context, message messengerapi.Message) error {
+	slog.DebugContext(ctx, "[machine] handling message")
 
 	cmd, mState, err := h.determineCommandAndState(ctx, message)
 	if err != nil {
@@ -88,21 +71,22 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 
 	ctx = logx.WithCommandName(ctx, cmd.Name)
 
-	slog.DebugContext(ctx, "[handler] find action")
+	slog.DebugContext(ctx, "[machine] find action")
 
 	act, err := h.findAction(mState, cmd.Command)
 	if err != nil {
 		return fmt.Errorf("find action: %w", err)
 	}
 
-	slog.DebugContext(ctx, "[handler] action found", logx.StateName(act.State()))
+	slog.DebugContext(ctx, "[machine] action found", logx.StateName(act.State()))
 
 	err = h.bus.Handle(ctx, &command.Request{
 		Message: message,
 		State:   mState,
 	}, act)
 	if err != nil {
-		return h.handleCommandError(ctx, message, err)
+		_, err = h.errorHandler(ctx, message, err)
+		return err
 	}
 
 	if !mState.RecentlyTransited() {
@@ -114,7 +98,7 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 
 		slog.InfoContext(
 			ctx,
-			"[handler] transit state",
+			"[machine] transit state",
 			slog.String("from_state", act.State()),
 			slog.String("next_state", nextAct.State()),
 		)
@@ -136,23 +120,23 @@ func (h *Handler) handle(ctx context.Context, message messenger.Message) error {
 	return nil
 }
 
-func (h *Handler) forward(
+func (h *Machine) forward(
 	ctx context.Context,
-	message messenger.Message,
+	message messengerapi.Message,
 	mState *state.State,
 	act command.Action,
 ) error {
 	if mState.Forwarded().NewStateName() == state.Passthrough {
-		slog.DebugContext(ctx, "[handler] passthrough", slog.String("to_state", act.Next().State()))
+		slog.DebugContext(ctx, "[machine] passthrough", slog.String("to_state", act.Next().State()))
 	} else {
-		slog.DebugContext(ctx, "[handler] forwarding", slog.String("to_state", act.State()))
+		slog.DebugContext(ctx, "[machine] forwarding", slog.String("to_state", act.State()))
 	}
 
 	return h.handle(ctx, message)
 }
 
-func (h *Handler) finishState(ctx context.Context, act command.Action, mState *state.State) error {
-	slog.InfoContext(ctx, "[handler] next state not found", slog.String("state.name", act.State()))
+func (h *Machine) finishState(ctx context.Context, act command.Action, mState *state.State) error {
+	slog.InfoContext(ctx, "[machine] next state not found", slog.String("state.name", act.State()))
 
 	h.metrics.IncCommandFinished(mState.CommandName())
 	h.metrics.ObserveCommandExecution(mState.CommandName(), mState.Duration())
@@ -164,9 +148,9 @@ func (h *Handler) finishState(ctx context.Context, act command.Action, mState *s
 	return nil
 }
 
-func (h *Handler) determineCommandAndState(
+func (h *Machine) determineCommandAndState(
 	ctx context.Context,
-	message messenger.Message,
+	message messengerapi.Message,
 ) (*router.NamedCommand, *state.State, error) {
 	var cmd *router.NamedCommand
 
@@ -175,14 +159,14 @@ func (h *Handler) determineCommandAndState(
 		if errors.Is(err, state.ErrStateNotFound) {
 			cmdName := message.ExtractCommandName()
 
-			slog.DebugContext(ctx, "[handler] state not found", slog.String("command.name", cmdName))
+			slog.DebugContext(ctx, "[machine] state not found", slog.String("command.name", cmdName))
 
 			cmd, err = h.router.Find(cmdName)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			slog.DebugContext(ctx, "[handler] command found", slog.String("command.name", cmd.Name))
+			slog.DebugContext(ctx, "[machine] command found", slog.String("command.name", cmd.Name))
 
 			mState = state.NewState(message.GetChatID(), cmd.Name)
 
@@ -193,22 +177,22 @@ func (h *Handler) determineCommandAndState(
 	}
 
 	slog.DebugContext(ctx,
-		"[handler] found state",
+		"[machine] found state",
 		logx.StateName(mState.Name()),
 		slog.String("state.command_name", mState.CommandName()),
 	)
 
 	cmd, err = h.router.Find(mState.CommandName())
 	if err != nil {
-		slog.ErrorContext(ctx, "[handler] failed to find command", logx.CommandName(mState.CommandName()), logx.Err(err))
+		slog.ErrorContext(ctx, "[machine] failed to find command", logx.CommandName(mState.CommandName()), logx.Err(err))
 
 		return nil, nil, fmt.Errorf("find command: %w", err)
 	}
 
-	slog.DebugContext(ctx, "[handler] command found", logx.CommandName(cmd.Name))
+	slog.DebugContext(ctx, "[machine] command found", logx.CommandName(cmd.Name))
 
 	if h.detectInterrupt(message, mState) {
-		slog.DebugContext(ctx, "[handler] interrupt detected", logx.CommandName(cmd.Name))
+		slog.DebugContext(ctx, "[machine] interrupt detected", logx.CommandName(cmd.Name))
 
 		cmd, mState, err = h.tryInterrupt(ctx, cmd, message, mState)
 		if err != nil {
@@ -219,7 +203,7 @@ func (h *Handler) determineCommandAndState(
 	return cmd, mState, nil
 }
 
-func (h *Handler) findAction(state *state.State, cmd command.Command) (command.Action, error) {
+func (h *Machine) findAction(state *state.State, cmd command.Command) (command.Action, error) {
 	acts := cmd.Actions()
 
 	if state.Name() == "" {

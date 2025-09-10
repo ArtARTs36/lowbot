@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/artarts36/lowbot/pkg/engine/command"
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
+	"github.com/artarts36/lowbot/engine/command"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
 
 type startCommand struct {
@@ -43,7 +43,7 @@ func (c *startCommand) Actions() *command.Actions {
 				i++
 			}
 
-			return req.Message.Respond(&messenger.Answer{
+			return req.Message.Respond(&messengerapi.Answer{
 				Text: strings.Join(text, "\n"),
 			})
 		},

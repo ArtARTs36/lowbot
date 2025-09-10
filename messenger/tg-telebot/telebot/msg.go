@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/artarts36/lowbot/pkg/engine/messenger"
-	"github.com/artarts36/lowbot/pkg/messengers/telebot/callback"
+	"github.com/artarts36/lowbot/messenger/messengerapi"
+	"github.com/artarts36/lowbot/messenger/tg-telebot/telebot/callback"
+
 	"gopkg.in/telebot.v4"
 )
 
@@ -58,7 +59,7 @@ func (m *message) GetBody() string {
 	return m.text
 }
 
-func (m *message) Respond(answer *messenger.Answer) error {
+func (m *message) Respond(answer *messengerapi.Answer) error {
 	var what interface{}
 	var opts []interface{}
 
@@ -77,11 +78,11 @@ func (m *message) Respond(answer *messenger.Answer) error {
 	return m.ctx.Send(what, opts...)
 }
 
-func (m *message) RespondObject(object messenger.Object) error {
+func (m *message) RespondObject(object messengerapi.Object) error {
 	var what interface{}
 
 	switch o := object.(type) {
-	case *messenger.LocalImage:
+	case *messengerapi.LocalImage:
 		what = &telebot.Photo{
 			File: telebot.File{
 				FileLocal: o.Path,
@@ -120,7 +121,7 @@ func (m *message) buildMenuOpt(enum []string) *telebot.ReplyMarkup {
 	return menu
 }
 
-func (m *message) buildEnumOpt(enum messenger.Enum) *telebot.ReplyMarkup {
+func (m *message) buildEnumOpt(enum messengerapi.Enum) *telebot.ReplyMarkup {
 	menu := &telebot.ReplyMarkup{
 		ResizeKeyboard:  true,
 		OneTimeKeyboard: true,
