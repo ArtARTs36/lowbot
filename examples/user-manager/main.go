@@ -9,13 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/artarts36/lowbot/entrypoint/webhookapp"
+
 	"github.com/artarts36/lowbot/messenger/tg-telebot/telebot"
 
 	"github.com/artarts36/lowbot/middleware"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/artarts36/lowbot/application"
 	"github.com/artarts36/lowbot/engine/command"
 	"github.com/artarts36/lowbot/logx"
 	"github.com/artarts36/lowbot/messenger/messengerapi"
@@ -39,11 +40,11 @@ func main() {
 		panic(err)
 	}
 
-	app, err := application.New(
+	app, err := webhookapp.New(
 		msgr,
-		application.WithCommandSuggestion(),
-		application.WithHTTPAddr(":9005"),
-		application.WithMiddleware(
+		webhookapp.WithCommandSuggestion(),
+		webhookapp.WithHTTPAddr(":9005"),
+		webhookapp.WithMiddleware(
 			func(ctx context.Context, req *command.Request, next command.ActionCallback) error {
 				slog.InfoContext(ctx, "[main] handling request", slog.Any("req", req))
 				return next(ctx, req)

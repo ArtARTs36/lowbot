@@ -1,4 +1,4 @@
-package application
+package webhookapp
 
 import (
 	"github.com/artarts36/lowbot/engine/command"
