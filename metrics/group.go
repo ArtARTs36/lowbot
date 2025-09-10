@@ -10,6 +10,7 @@ import (
 type Group struct {
 	commandFinished         *prometheus.CounterVec
 	commandExecution        *prometheus.HistogramVec
+	commandActionExecution  *prometheus.HistogramVec
 	commandStateTransitions *prometheus.CounterVec
 	commandInterruptions    *prometheus.CounterVec
 	commandNotFound         prometheus.Counter
@@ -29,6 +30,12 @@ func NewGroup(namespace string) *Group {
 			Help:      "Time taken to execute commands",
 			Buckets:   []float64{1, 5, 15, 30, 60, 90, 120, 150, 180},
 		}, []string{"command"}),
+		commandActionExecution: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Namespace: namespace,
+			Name:      "command_action_execution_seconds",
+			Help:      "Time taken to execute command actions",
+			Buckets:   []float64{1, 5, 15, 30, 60},
+		}, []string{"command", "action"}),
 		commandStateTransitions: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "command_state_transitions_total",
@@ -55,6 +62,7 @@ func NewGroup(namespace string) *Group {
 func (g *Group) Describe(ch chan<- *prometheus.Desc) {
 	g.commandFinished.Describe(ch)
 	g.commandExecution.Describe(ch)
+	g.commandActionExecution.Describe(ch)
 	g.commandStateTransitions.Describe(ch)
 	g.commandInterruptions.Describe(ch)
 	g.commandNotFound.Describe(ch)
@@ -64,6 +72,7 @@ func (g *Group) Describe(ch chan<- *prometheus.Desc) {
 func (g *Group) Collect(ch chan<- prometheus.Metric) {
 	g.commandFinished.Collect(ch)
 	g.commandExecution.Collect(ch)
+	g.commandActionExecution.Collect(ch)
 	g.commandStateTransitions.Collect(ch)
 	g.commandInterruptions.Collect(ch)
 	g.commandNotFound.Collect(ch)
@@ -76,6 +85,10 @@ func (g *Group) IncCommandFinished(command string) {
 
 func (g *Group) ObserveCommandExecution(command string, execution time.Duration) {
 	g.commandExecution.WithLabelValues(command).Observe(float64(execution))
+}
+
+func (g *Group) ObserveCommandActionExecution(command string, action string, execution time.Duration) {
+	g.commandActionExecution.WithLabelValues(command, action).Observe(float64(execution))
 }
 
 func (g *Group) IncCommandStateTransition(command, fromState, toState string) {

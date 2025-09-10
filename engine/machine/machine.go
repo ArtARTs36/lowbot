@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/artarts36/lowbot/metrics"
 
@@ -70,6 +71,8 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 		return fmt.Errorf("determine command and state: %w", err)
 	}
 
+	startedAt := time.Now()
+
 	ctx = logx.WithCommandName(ctx, cmd.Name)
 
 	slog.DebugContext(ctx, "[machine] find action")
@@ -125,6 +128,8 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 	if err != nil {
 		return fmt.Errorf("put state: %w", err)
 	}
+
+	h.metrics.ObserveCommandActionExecution(cmd.Name, act.State(), time.Since(startedAt))
 
 	if mState.Forwarded() != nil {
 		return h.forward(ctx, message, mState, act)
