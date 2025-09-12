@@ -23,7 +23,7 @@ type Machine struct {
 	errorHandler ErrorHandler
 
 	commandNotFoundFallback CommandNotFoundFallback
-	metrics                 *metrics.Group
+	metrics                 *metrics.Command
 	bus                     command.Bus
 }
 
@@ -40,7 +40,7 @@ func New(
 		stateStorage:            stateStorage,
 		errorHandler:            errorHandler,
 		commandNotFoundFallback: commandNotFoundFallback,
-		metrics:                 metrics,
+		metrics:                 metrics.Command(),
 		bus:                     bus,
 	}
 }
@@ -54,7 +54,7 @@ func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) erro
 	err := h.handle(ctx, message)
 	if err != nil {
 		if errors.Is(err, router.ErrCommandNotFound) {
-			h.metrics.IncCommandNotFound()
+			h.metrics.IncNotFound()
 			return h.commandNotFoundFallback(ctx, message)
 		}
 
@@ -89,7 +89,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 			_, err = h.errorHandler(ctx, message, err)
 			var codeErr command.CodeError
 			if errors.As(err, &codeErr) {
-				h.metrics.IncCommandActionHandled(cmd.Name, act.State(), codeErr.Code())
+				h.metrics.IncActionHandled(cmd.Name, act.State(), codeErr.Code())
 			}
 		}
 
@@ -103,7 +103,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 	if err != nil {
 		return err
 	}
-	h.metrics.IncCommandActionHandled(cmd.Name, act.State(), "OK")
+	h.metrics.IncActionHandled(cmd.Name, act.State(), "OK")
 
 	if !mState.RecentlyTransited() {
 		nextAct := act.Next()
@@ -122,14 +122,14 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 		mState.Transit(nextAct.State())
 	}
 
-	h.metrics.IncCommandStateTransition(cmd.Name, act.State(), mState.Name())
+	h.metrics.IncStateTransition(cmd.Name, act.State(), mState.Name())
 
 	err = h.stateStorage.Put(ctx, mState)
 	if err != nil {
 		return fmt.Errorf("put state: %w", err)
 	}
 
-	h.metrics.ObserveCommandActionExecution(cmd.Name, act.State(), time.Since(startedAt))
+	h.metrics.ObserveActionExecution(cmd.Name, act.State(), time.Since(startedAt))
 
 	if mState.Forwarded() != nil {
 		return h.forward(ctx, message, mState, act)
@@ -156,8 +156,8 @@ func (h *Machine) forward(
 func (h *Machine) finishState(ctx context.Context, act command.Action, mState *state.State) error {
 	slog.InfoContext(ctx, "[machine] next state not found", slog.String("state.name", act.State()))
 
-	h.metrics.IncCommandFinished(mState.CommandName())
-	h.metrics.ObserveCommandExecution(mState.CommandName(), mState.Duration())
+	h.metrics.IncFinished(mState.CommandName())
+	h.metrics.ObserveExecution(mState.CommandName(), mState.Duration())
 
 	derr := h.stateStorage.Delete(ctx, mState)
 	if derr != nil {

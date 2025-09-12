@@ -35,7 +35,7 @@ func (h *Machine) tryInterrupt(
 		return nil, nil, fmt.Errorf("defines interruption: %w", err)
 	}
 
-	h.metrics.IncCommandInterruption(currentCommand.Name, mState.Name(), desiredCommandName, allow)
+	h.metrics.IncInterruption(currentCommand.Name, mState.Name(), desiredCommandName, allow)
 
 	if !allow {
 		return currentCommand, mState, nil

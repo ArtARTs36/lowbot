@@ -57,6 +57,8 @@ func New(
 		return nil, fmt.Errorf("register metrics: %w", err)
 	}
 
+	cfg.storage = state.NewObservableStorage(cfg.storage, metricsGroup.StateStorage())
+
 	app := &Application{
 		router: cfg.router,
 		msngr:  msngr,
