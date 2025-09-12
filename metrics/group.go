@@ -7,6 +7,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const namespace = "lowbot"
+
 type Group struct {
 	commandFinished         *prometheus.CounterVec
 	commandExecution        *prometheus.HistogramVec
@@ -17,7 +19,7 @@ type Group struct {
 	commandActionHandled    *prometheus.CounterVec
 }
 
-func NewGroup(namespace string) *Group {
+func NewGroup() *Group {
 	return &Group{
 		commandFinished: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,

@@ -1,9 +1,9 @@
 package webhookapp
 
 import (
-	"github.com/artarts36/lowbot/engine/command"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/artarts36/lowbot/engine/command"
 	"github.com/artarts36/lowbot/engine/machine"
 	"github.com/artarts36/lowbot/engine/router"
 	"github.com/artarts36/lowbot/engine/state"
@@ -16,6 +16,7 @@ type config struct {
 	router                  router.Router
 	prometheusRegisterer    prometheus.Registerer
 	middlewares             []command.Middleware
+	startCommandFn          func(router.Router) command.Command
 }
 
 type Option func(*config)
@@ -63,5 +64,11 @@ func WithPrometheus(registerer prometheus.Registerer) Option {
 func WithMiddleware(middleware ...command.Middleware) Option {
 	return func(c *config) {
 		c.middlewares = append(c.middlewares, middleware...)
+	}
+}
+
+func WithStartCommand(factory func(router router.Router) command.Command) Option {
+	return func(c *config) {
+		c.startCommandFn = factory
 	}
 }

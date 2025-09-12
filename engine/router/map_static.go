@@ -9,11 +9,6 @@ func NewMapStaticRouter() *MapStaticRouter {
 		commands: map[string]*NamedCommand{},
 	}
 
-	_ = r.Add(&NamedCommand{
-		Name:    "start",
-		Command: newStartCommand("start", r),
-	})
-
 	return r
 }
 

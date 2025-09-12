@@ -42,13 +42,16 @@ func New(
 		router:               router.NewMapStaticRouter(),
 		prometheusRegisterer: prometheus.DefaultRegisterer,
 		middlewares:          make([]command.Middleware, 0),
+		startCommandFn: func(r router.Router) command.Command {
+			return router.NewStartCommand("start", r)
+		},
 	}
 
 	for _, opt := range opts {
 		opt(cfg)
 	}
 
-	metricsGroup := metrics.NewGroup("lowbot")
+	metricsGroup := metrics.NewGroup()
 
 	if err := cfg.prometheusRegisterer.Register(metricsGroup); err != nil {
 		return nil, fmt.Errorf("register metrics: %w", err)
@@ -57,6 +60,14 @@ func New(
 	app := &Application{
 		router: cfg.router,
 		msngr:  msngr,
+	}
+
+	err := app.router.Add(&router.NamedCommand{
+		Name:    "start",
+		Command: cfg.startCommandFn(app.router),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("register start command: %w", err)
 	}
 
 	app.machine = machine.New(
