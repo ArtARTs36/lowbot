@@ -26,18 +26,20 @@ func WithStateStorage(storage state.Storage) Option {
 	}
 }
 
-func WithCommandNotFoundFallback(fallback machine.CommandNotFoundFallback) Option {
+func WithCommandNotFoundFallback(fallbackFactory func(router router.Router) machine.CommandNotFoundFallback) Option {
 	return func(c *config) {
-		c.commandNotFoundFallback = func(_ router.Router) machine.CommandNotFoundFallback {
-			return fallback
-		}
+		c.commandNotFoundFallback = fallbackFactory
 	}
 }
 
 func WithCommandSuggestion() Option {
-	return func(c *config) {
-		c.commandNotFoundFallback = machine.SuggestCommandNotFoundFallback
-	}
+	return WithCommandNotFoundFallback(machine.SuggestCommandNotFoundFallback)
+}
+
+func WithErrorCommandNotFoundFallback() Option {
+	return WithCommandNotFoundFallback(func(_ router.Router) machine.CommandNotFoundFallback {
+		return machine.ErrorCommandNotFoundFallback()
+	})
 }
 
 func WithHTTPAddr(addr string) Option {
