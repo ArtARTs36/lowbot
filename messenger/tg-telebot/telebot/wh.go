@@ -58,12 +58,21 @@ func (s *WebhookMessenger) Listen(ch chan messengerapi.Message) error {
 		for update := range updates {
 			var msg *message
 
+			teleCtx := tele.NewContext(s.bot, update)
+
 			slog.Debug("[webhook-messenger] received update", slog.Int("update.id", update.ID))
 
 			if update.Message != nil { //nolint:gocritic // not need
-				msg = newMessageFromMessage(update.Message, tele.NewContext(s.bot, update))
+				msg = newMessageFromMessage(update.Message, teleCtx)
 			} else if update.Callback != nil {
-				msg = newMessageFromCallback(update.Callback, tele.NewContext(s.bot, update))
+				msg = newMessageFromCallback(update.Callback, teleCtx)
+				rerr := teleCtx.Respond()
+				if rerr != nil {
+					slog.Error("[webhook-messenger] failed to respond to callback",
+						slog.Int("update.id", update.ID),
+						slog.Any("err", rerr),
+					)
+				}
 			} else {
 				slog.Debug("[webhook-messenger] skip update", slog.Int("update.id", update.ID))
 				continue
