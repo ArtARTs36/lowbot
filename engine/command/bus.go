@@ -19,7 +19,7 @@ var passMiddleware = Middleware(func(ctx context.Context, req *Request, next Act
 func NewBus(mws []Middleware) Bus {
 	b := &bus{mws: mws}
 
-	if b.mws == nil {
+	if len(b.mws) == 0 {
 		b.mws = []Middleware{passMiddleware}
 	}
 
