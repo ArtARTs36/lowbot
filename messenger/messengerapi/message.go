@@ -5,6 +5,9 @@ type Message interface {
 	GetChatID() string
 	GetBody() string
 
+	// GetSender returns User that sent this message.
+	GetSender() *Sender
+
 	ExtractCommandName() string
 
 	Respond(answer *Answer) error

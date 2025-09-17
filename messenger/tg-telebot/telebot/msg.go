@@ -17,6 +17,7 @@ type message struct {
 	id     string
 	chatID string
 	text   string
+	sender *messengerapi.Sender
 }
 
 func newMessageFromMessage(msg *telebot.Message, ctx telebot.Context) *message {
@@ -25,6 +26,7 @@ func newMessageFromMessage(msg *telebot.Message, ctx telebot.Context) *message {
 		id:     fmt.Sprintf("%d", msg.ID),
 		chatID: strconv.FormatInt(msg.Chat.ID, 10),
 		text:   msg.Text,
+		sender: userToSender(msg.Sender),
 	}
 }
 
@@ -34,6 +36,7 @@ func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message
 		id:     clb.ID,
 		chatID: strconv.FormatInt(clb.Message.Chat.ID, 10),
 		text:   clb.Message.Text,
+		sender: userToSender(clb.Sender),
 	}
 
 	clbID := callback.ParseID(clb.Data)
@@ -47,6 +50,15 @@ func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message
 	return msg
 }
 
+func userToSender(user *telebot.User) *messengerapi.Sender {
+	return &messengerapi.Sender{
+		ID:        strconv.FormatInt(user.ID, 10),
+		Username:  user.Username,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+	}
+}
+
 func (m *message) GetID() string {
 	return m.id
 }
@@ -57,6 +69,10 @@ func (m *message) GetChatID() string {
 
 func (m *message) GetBody() string {
 	return m.text
+}
+
+func (m *message) GetSender() *messengerapi.Sender {
+	return m.sender
 }
 
 func (m *message) Respond(answer *messengerapi.Answer) error {
