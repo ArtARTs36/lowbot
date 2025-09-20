@@ -31,14 +31,14 @@ func newCommand() *Command {
 			Namespace: namespace,
 			Subsystem: subsystemCommand,
 			Name:      "execution_seconds",
-			Help:      "Time taken to execute commands",
+			Help:      "Before taken to execute commands",
 			Buckets:   []float64{1, 5, 15, 30, 60, 90, 120, 150, 180},
 		}, []string{"command"}),
 		actionExecution: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
 			Subsystem: subsystemCommand,
 			Name:      "action_execution_seconds",
-			Help:      "Time taken to execute command actions",
+			Help:      "Before taken to execute command actions",
 			Buckets:   []float64{1, 5, 15, 30, 60},
 		}, []string{"command", "action"}),
 		stateTransitions: prometheus.NewCounterVec(prometheus.CounterOpts{

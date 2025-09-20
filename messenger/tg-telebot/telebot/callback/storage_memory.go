@@ -3,6 +3,7 @@ package callback
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 type memoryStorage struct {
@@ -38,5 +39,16 @@ func (s *memoryStorage) Delete(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.data, id)
+	return nil
+}
+
+func (s *memoryStorage) DeleteBefore(_ context.Context, before time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k, v := range s.data {
+		if v.CreatedAt.Before(before) {
+			delete(s.data, k)
+		}
+	}
 	return nil
 }

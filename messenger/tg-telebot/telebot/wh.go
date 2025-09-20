@@ -30,6 +30,7 @@ type WebhookConfig struct {
 	Token      string
 
 	CallbackStorage callback.Storage
+	CallbackManager callback.ManagerConfig
 }
 
 func NewWebhookMessenger(
@@ -62,7 +63,7 @@ func NewWebhookMessenger(
 	return &WebhookMessenger{
 		httpHandler:    webhook,
 		bot:            bot,
-		messageAdapter: newMessageAdapter(callback.NewManager(cfg.CallbackStorage, logger), logger),
+		messageAdapter: newMessageAdapter(callback.NewManager(cfg.CallbackManager, cfg.CallbackStorage, logger), logger),
 		logger:         logger,
 	}, nil
 }

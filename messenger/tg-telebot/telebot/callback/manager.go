@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/artarts36/lowbot/logx"
 
@@ -17,19 +18,47 @@ const deletingQueueSize = 1000
 type Manager struct {
 	storage Storage
 
-	deletingQueue chan string
+	deletingQueue chan *deletingQueueMessage
 	logger        logx.Logger
+	cfg           ManagerConfig
 }
 
-func NewManager(storage Storage, logger logx.Logger) *Manager {
+type ManagerConfig struct {
+	DeletingQueueSize int           `env:"DELETING_QUEUE_SIZE" envDefault:"1000"`
+	TTL               time.Duration `env:"TTL" envDefault:"1h"`
+	CleanInterval     time.Duration `env:"CLEAN_INTERVAL" envDefault:"1m"`
+}
+
+type deletingQueueMessage struct {
+	ID     string // or
+	Before time.Time
+}
+
+func NewManager(
+	cfg ManagerConfig,
+	storage Storage,
+	logger logx.Logger,
+) *Manager {
+	if cfg.TTL == 0 {
+		cfg.TTL = 1 * time.Hour
+	}
+	if cfg.DeletingQueueSize == 0 {
+		cfg.DeletingQueueSize = deletingQueueSize
+	}
+
 	m := &Manager{
 		storage:       storage,
-		deletingQueue: make(chan string, deletingQueueSize),
+		deletingQueue: make(chan *deletingQueueMessage, cfg.DeletingQueueSize),
 		logger:        logger,
+		cfg:           cfg,
 	}
 
 	go func() {
 		m.listenDeletingQueue()
+	}()
+
+	go func() {
+		m.cleanUnanswered()
 	}()
 
 	return m
@@ -53,7 +82,9 @@ func (m *Manager) Find(ctx context.Context, id string) (*Callback, error) {
 }
 
 func (m *Manager) Delete(ctx context.Context, id string) {
-	m.deletingQueue <- id
+	m.deletingQueue <- &deletingQueueMessage{
+		ID: id,
+	}
 
 	m.logger.DebugContext(ctx, "[lowbot][callback-manager] callback stored to delete queue",
 		slog.String("callback.id", id),
@@ -61,12 +92,39 @@ func (m *Manager) Delete(ctx context.Context, id string) {
 }
 
 func (m *Manager) listenDeletingQueue() {
-	for id := range m.deletingQueue {
+	for msg := range m.deletingQueue {
 		ctx := context.Background()
 
-		err := m.storage.Delete(ctx, id)
-		if err != nil {
-			m.logger.ErrorContext(ctx, "[lowbot][callback-manager] failed to delete", slogx.Error(err))
+		if msg.ID != "" {
+			m.logger.DebugContext(ctx, "[lowbot][callback-manager] deleting callback", slog.String("callback.id", msg.ID))
+
+			err := m.storage.Delete(ctx, msg.ID)
+			if err != nil {
+				m.logger.ErrorContext(ctx, "[lowbot][callback-manager] failed to delete callback",
+					slogx.Error(err),
+					slog.String("callback.id", msg.ID),
+				)
+			}
+		} else {
+			m.logger.DebugContext(ctx, "[lowbot][callback-manager] deleting unanswered callbacks",
+				slog.String("time_before", msg.Before.String()),
+			)
+
+			err := m.storage.DeleteBefore(ctx, msg.Before)
+			if err != nil {
+				m.logger.ErrorContext(ctx, "[lowbot][callback-manager] failed to delete unanswered callbacks",
+					slogx.Error(err),
+					slog.String("time_before", msg.Before.String()),
+				)
+			}
+		}
+	}
+}
+
+func (m *Manager) cleanUnanswered() {
+	for range time.Tick(m.cfg.CleanInterval) {
+		m.deletingQueue <- &deletingQueueMessage{
+			Before: time.Now().Add(-m.cfg.TTL),
 		}
 	}
 }
