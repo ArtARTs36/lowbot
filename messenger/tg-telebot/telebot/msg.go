@@ -1,8 +1,9 @@
 package telebot
 
 import (
+	"context"
 	"fmt"
-	"strconv"
+	"log/slog"
 	"strings"
 
 	"github.com/artarts36/lowbot/messenger/messengerapi"
@@ -18,45 +19,8 @@ type message struct {
 	chatID string
 	text   string
 	sender *messengerapi.Sender
-}
 
-func newMessageFromMessage(msg *telebot.Message, ctx telebot.Context) *message {
-	return &message{
-		ctx:    ctx,
-		id:     fmt.Sprintf("%d", msg.ID),
-		chatID: strconv.FormatInt(msg.Chat.ID, 10),
-		text:   msg.Text,
-		sender: userToSender(msg.Sender),
-	}
-}
-
-func newMessageFromCallback(clb *telebot.Callback, ctx telebot.Context) *message {
-	msg := &message{
-		ctx:    ctx,
-		id:     clb.ID,
-		chatID: strconv.FormatInt(clb.Message.Chat.ID, 10),
-		text:   clb.Message.Text,
-		sender: userToSender(clb.Sender),
-	}
-
-	clbID := callback.ParseID(clb.Data)
-	if clbID != nil {
-		switch v := clbID.(type) { //nolint:gocritic // not need
-		case *callback.PassEnumValue:
-			msg.text = v.Value
-		}
-	}
-
-	return msg
-}
-
-func userToSender(user *telebot.User) *messengerapi.Sender {
-	return &messengerapi.Sender{
-		ID:        strconv.FormatInt(user.ID, 10),
-		Username:  user.Username,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-	}
+	callbackManager *callback.Manager
 }
 
 func (m *message) GetID() string {
@@ -147,7 +111,10 @@ func (m *message) buildEnumOpt(enum messengerapi.Enum) *telebot.ReplyMarkup {
 	rows := make([]telebot.Row, 1)
 	for value, title := range enum.Values {
 		btn := menu.Text(title)
-		btn.Unique = callback.NewPassEnumValue(value).String()
+
+		if err := m.callbackManager.Bind(context.Background(), &btn, callback.NewEnum(value)); err != nil {
+			slog.Error("failed to bind enum value", "value", value, "error", err)
+		}
 
 		rows[0] = append(rows[0], btn)
 	}

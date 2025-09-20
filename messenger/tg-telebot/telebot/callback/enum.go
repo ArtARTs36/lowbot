@@ -1,17 +1,11 @@
 package callback
 
-import "fmt"
-
 type PassEnumValue struct {
-	Value string
+	Value string `json:"value"`
 }
 
-func NewPassEnumValue(value string) *PassEnumValue {
-	return &PassEnumValue{
-		Value: value,
-	}
+func NewEnum(value string) *Callback {
+	return NewCallback(TypeEnum, &PassEnumValue{Value: value})
 }
 
-func (v *PassEnumValue) String() string {
-	return fmt.Sprintf("%s:%s", TypePassEnumValue, v.Value)
-}
+func (v PassEnumValue) value() {}

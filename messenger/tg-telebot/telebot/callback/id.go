@@ -3,9 +3,5 @@ package callback
 type Type string
 
 const (
-	TypePassEnumValue Type = "PassEnumValue"
+	TypeEnum Type = "enum"
 )
-
-type ID interface {
-	String() string
-}
