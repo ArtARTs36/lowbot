@@ -13,13 +13,13 @@ import (
 
 // ErrorHandler
 // Return true, when ErrorHandler handled error.
-type ErrorHandler func(ctx context.Context, msg messengerapi.Message, err error) (bool, error)
+type ErrorHandler func(ctx context.Context, req *Request, err error) (bool, error)
 
 var (
-	invalidArgumentErrHandler ErrorHandler = func(ctx context.Context, msg messengerapi.Message, err error) (bool, error) {
+	invalidArgumentErrHandler ErrorHandler = func(ctx context.Context, req *Request, err error) (bool, error) {
 		validErr := &command.InvalidArgumentError{}
 		if errors.As(err, &validErr) {
-			sendErr := msg.Respond(&messengerapi.Answer{
+			sendErr := req.Responder.Respond(&messengerapi.Answer{
 				Text: validErr.Text,
 			})
 			if sendErr != nil {
@@ -33,7 +33,7 @@ var (
 
 	permissionDeniedErrHandler ErrorHandler = func(
 		ctx context.Context,
-		msg messengerapi.Message,
+		req *Request,
 		err error,
 	) (bool, error) {
 		permissionDeniedErr := &command.PermissionDeniedError{}
@@ -45,7 +45,7 @@ var (
 				userMsg = "Permission denied."
 			}
 
-			sendErr := msg.Respond(&messengerapi.Answer{
+			sendErr := req.Responder.Respond(&messengerapi.Answer{
 				Text: userMsg,
 			})
 			if sendErr != nil {
@@ -57,7 +57,7 @@ var (
 		return false, err
 	}
 
-	internalConvertErrHandler ErrorHandler = func(_ context.Context, _ messengerapi.Message, err error) (bool, error) {
+	internalConvertErrHandler ErrorHandler = func(_ context.Context, _ *Request, err error) (bool, error) {
 		internalErr := &command.InternalError{}
 		if errors.As(err, &internalErr) {
 			return true, nil
@@ -85,11 +85,11 @@ func NewErrorHandler(logger logx.Logger, handler ...ErrorHandler) ErrorHandler {
 	return ch.Handle
 }
 
-func (h *compositeErrorHandler) Handle(ctx context.Context, msg messengerapi.Message, handlingErr error) (bool, error) {
+func (h *compositeErrorHandler) Handle(ctx context.Context, req *Request, handlingErr error) (bool, error) {
 	h.logger.DebugContext(ctx, "[error-handler] handling error", slog.Any("err", handlingErr))
 
 	for _, handler := range h.handlers {
-		handled, err := handler(ctx, msg, handlingErr)
+		handled, err := handler(ctx, req, handlingErr)
 		if handled {
 			return true, err
 		}

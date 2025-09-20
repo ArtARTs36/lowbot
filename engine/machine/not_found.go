@@ -13,19 +13,19 @@ import (
 
 const levenshteinThreshold = 3
 
-type CommandNotFoundFallback func(ctx context.Context, message messengerapi.Message) error
+type CommandNotFoundFallback func(ctx context.Context, req *Request) error
 
 func ErrorCommandNotFoundFallback() CommandNotFoundFallback {
-	return func(_ context.Context, message messengerapi.Message) error {
-		return message.Respond(&messengerapi.Answer{
+	return func(_ context.Context, req *Request) error {
+		return req.Responder.Respond(&messengerapi.Answer{
 			Text: "Command not found.",
 		})
 	}
 }
 
 func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallback {
-	return func(_ context.Context, message messengerapi.Message) error {
-		msgCmd := message.ExtractCommandName()
+	return func(_ context.Context, req *Request) error {
+		msgCmd := req.Message.ExtractCommandName()
 		result := []string{
 			fmt.Sprintf("Command \"%s\" not found.", msgCmd),
 		}
@@ -44,7 +44,7 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 			result = append(result, cmds...)
 		}
 
-		return message.Respond(&messengerapi.Answer{
+		return req.Responder.Respond(&messengerapi.Answer{
 			Text: strings.Join(result, "\n"),
 		})
 	}

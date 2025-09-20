@@ -104,7 +104,10 @@ func (app *Application) Run() error {
 		for msg := range ch {
 			ctx := context.Background()
 
-			if err := app.machine.Handle(ctx, msg); err != nil {
+			if err := app.machine.Handle(ctx, &machine.Request{
+				Message:   msg,
+				Responder: app.msngr.CreateResponder(msg.GetChatID()),
+			}); err != nil {
 				slog.ErrorContext(ctx,
 					"[application] failed to handle message",
 					logx.Err(err),

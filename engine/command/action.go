@@ -8,8 +8,9 @@ import (
 )
 
 type Request struct {
-	Message messengerapi.Message
-	State   *state.State
+	Message   messengerapi.Message
+	Responder messengerapi.Responder
+	State     *state.State
 }
 
 type Action interface {

@@ -19,10 +19,11 @@ import (
 var _ messengerapi.Messenger = &WebhookMessenger{}
 
 type WebhookMessenger struct {
-	httpHandler    *tele.Webhook
-	bot            *tele.Bot
-	messageAdapter *messageAdapter
-	logger         logx.Logger
+	httpHandler     *tele.Webhook
+	bot             *tele.Bot
+	messageAdapter  *messageAdapter
+	logger          logx.Logger
+	callbackManager *callback.Manager
 }
 
 type WebhookConfig struct {
@@ -60,11 +61,14 @@ func NewWebhookMessenger(
 		return nil, fmt.Errorf("create telebot: %w", err)
 	}
 
+	callbackManager := callback.NewManager(cfg.CallbackManager, cfg.CallbackStorage, logger)
+
 	return &WebhookMessenger{
-		httpHandler:    webhook,
-		bot:            bot,
-		messageAdapter: newMessageAdapter(callback.NewManager(cfg.CallbackManager, cfg.CallbackStorage, logger), logger),
-		logger:         logger,
+		httpHandler:     webhook,
+		bot:             bot,
+		messageAdapter:  newMessageAdapter(callbackManager, logger),
+		logger:          logger,
+		callbackManager: callbackManager,
 	}, nil
 }
 
@@ -97,12 +101,18 @@ func (s *WebhookMessenger) Listen(ch chan messengerapi.Message) error {
 	return nil
 }
 
+func (s *WebhookMessenger) CreateResponder(chatID string) messengerapi.Responder {
+	return &responder{
+		bot:             s.bot,
+		recipient:       &telebotRecipient{chatID: chatID},
+		callbackManager: s.callbackManager,
+	}
+}
+
 func (s *WebhookMessenger) Close() error {
 	_, err := s.bot.Close()
 	return err
 }
-
-var errUpdateUnsupported = errors.New("update not supported")
 
 func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 	teleCtx := tele.NewContext(s.bot, update)
@@ -131,5 +141,5 @@ func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 		return msg, nil
 	}
 
-	return nil, errUpdateUnsupported
+	return nil, errors.New("update not supported")
 }

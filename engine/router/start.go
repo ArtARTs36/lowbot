@@ -48,7 +48,7 @@ func (c *StartCommand) Actions() *command.Actions {
 				i++
 			}
 
-			return req.Message.Respond(&messengerapi.Answer{
+			return req.Responder.Respond(&messengerapi.Answer{
 				Text: strings.Join(text, "\n"),
 			})
 		},

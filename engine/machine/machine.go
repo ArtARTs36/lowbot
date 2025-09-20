@@ -50,17 +50,22 @@ func New(
 	}
 }
 
-func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) error {
+type Request struct {
+	Message   messengerapi.Message
+	Responder messengerapi.Responder
+}
+
+func (h *Machine) Handle(ctx context.Context, req *Request) error {
 	ctx = logx.WithMessageID(
-		logx.WithChatID(ctx, message.GetChatID()),
-		message.GetID(),
+		logx.WithChatID(ctx, req.Message.GetChatID()),
+		req.Message.GetID(),
 	)
 
-	err := h.handle(ctx, message)
+	err := h.handle(ctx, req)
 	if err != nil {
 		if errors.Is(err, router.ErrCommandNotFound) {
 			h.metrics.IncNotFound()
-			return h.commandNotFoundFallback(ctx, message)
+			return h.commandNotFoundFallback(ctx, req)
 		}
 
 		return err
@@ -68,10 +73,10 @@ func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) erro
 	return nil
 }
 
-func (h *Machine) handle(ctx context.Context, message messengerapi.Message) error {
+func (h *Machine) handle(ctx context.Context, req *Request) error {
 	h.logger.DebugContext(ctx, "[machine] handling message")
 
-	dialog, err := h.stateDeterminer.Determine(ctx, message)
+	dialog, err := h.stateDeterminer.Determine(ctx, req.Message)
 	if err != nil {
 		return fmt.Errorf("determine command and state: %w", err)
 	}
@@ -89,9 +94,9 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 
 	h.logger.DebugContext(ctx, "[machine] action found", logx.StateName(act.State()))
 
-	run := func(ctx context.Context, req *command.Request) error {
-		if err = act.Run(ctx, req); err != nil {
-			_, err = h.errorHandler(ctx, message, err)
+	run := func(ctx context.Context, cmdReq *command.Request) error {
+		if err = act.Run(ctx, cmdReq); err != nil {
+			_, err = h.errorHandler(ctx, req, err)
 			var codeErr command.CodeError
 			if errors.As(err, &codeErr) {
 				h.metrics.IncActionHandled(dialog.Command.Definition().Name, act.State(), codeErr.Code())
@@ -104,8 +109,9 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 	}
 
 	err = h.bus.Handle(ctx, &command.Request{
-		Message: message,
-		State:   dialog.State,
+		Message:   req.Message,
+		Responder: req.Responder,
+		State:     dialog.State,
 	}, run)
 	if err != nil {
 		return err
@@ -139,7 +145,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 	h.metrics.ObserveActionExecution(dialog.Command.Definition().Name, act.State(), time.Since(startedAt))
 
 	if dialog.State.Forwarded() != nil {
-		return h.forward(ctx, message, dialog.State, act)
+		return h.forward(ctx, req, dialog.State, act)
 	}
 
 	return nil
@@ -147,7 +153,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 
 func (h *Machine) forward(
 	ctx context.Context,
-	message messengerapi.Message,
+	req *Request,
 	mState *state.State,
 	act command.Action,
 ) error {
@@ -157,7 +163,7 @@ func (h *Machine) forward(
 		h.logger.DebugContext(ctx, "[lowbot][machine] forwarding", slog.String("to_state", act.State()))
 	}
 
-	return h.handle(ctx, message)
+	return h.handle(ctx, req)
 }
 
 func (h *Machine) finishState(ctx context.Context, act command.Action, mState *state.State) error {

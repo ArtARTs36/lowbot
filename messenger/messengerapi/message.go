@@ -10,10 +10,4 @@ type Message interface {
 
 	ExtractCommandName() string
 	GetArgs() *Args
-
-	Respond(answer *Answer) error
-
-	// RespondObject responds media files.
-	// See LocalImage
-	RespondObject(file Object) error
 }
