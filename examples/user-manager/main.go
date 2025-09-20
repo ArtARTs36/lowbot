@@ -58,9 +58,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	app.MustAddCommand("add", &addUserCommand{})
-	app.MustAddCommand("delete", &deleteUserCommand{})
-	app.MustAddCommand("update", &updateUserCommand{})
+	app.MustAddCommand(&addUserCommand{})
+	app.MustAddCommand(&deleteUserCommand{})
+	app.MustAddCommand(&updateUserCommand{})
 
 	go func() {
 		mux := http.NewServeMux()
