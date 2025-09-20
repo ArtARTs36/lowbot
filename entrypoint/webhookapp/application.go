@@ -91,9 +91,9 @@ func (app *Application) AddCommand(cmd command.Command) error {
 	return app.router.Add(cmd)
 }
 
-func (app *Application) MustAddCommand(cmdName string, cmd command.Command) {
+func (app *Application) MustAddCommand(cmd command.Command) {
 	if err := app.AddCommand(cmd); err != nil {
-		panic(fmt.Sprintf("failed to add command %q: %v", cmdName, err))
+		panic(fmt.Sprintf("failed to add command %q: %v", cmd.Definition().Name, err))
 	}
 }
 
