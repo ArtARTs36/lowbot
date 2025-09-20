@@ -27,6 +27,7 @@ type Application struct {
 	msngr   messengerapi.Messenger
 
 	server *http.Server
+	logger logx.Logger
 }
 
 func New(
@@ -45,6 +46,7 @@ func New(
 		startCommandFn: func(r router.Router) command.Command {
 			return router.NewStartCommand("start", r)
 		},
+		logger: slog.Default(),
 	}
 
 	for _, opt := range opts {
@@ -62,6 +64,7 @@ func New(
 	app := &Application{
 		router: cfg.router,
 		msngr:  msngr,
+		logger: cfg.logger,
 	}
 
 	err := app.router.Add(&router.NamedCommand{
@@ -75,10 +78,11 @@ func New(
 	app.machine = machine.New(
 		app.router,
 		cfg.storage,
-		machine.NewErrorHandler(),
+		machine.NewErrorHandler(cfg.logger),
 		cfg.commandNotFoundFallback(app.router),
 		metricsGroup,
 		command.NewBus(cfg.middlewares),
+		cfg.logger,
 	)
 
 	app.prepareHTTPServer(cfg.httpAddr)
@@ -125,7 +129,7 @@ func (app *Application) Run() error {
 		close(ch)
 	}()
 
-	slog.Info("[application] listen http server", slog.String("addr", app.server.Addr))
+	app.logger.InfoContext(context.Background(), "[application] listen http server", slog.String("addr", app.server.Addr))
 
 	return app.server.ListenAndServe()
 }

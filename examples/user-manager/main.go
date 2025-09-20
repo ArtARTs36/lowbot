@@ -85,7 +85,7 @@ func main() {
 func createMessenger() (messengerapi.Messenger, error) {
 	return telebot.NewWebhookMessenger(telebot.WebhookConfig{
 		Token: os.Getenv("TELEGRAM_TOKEN"),
-	})
+	}, slog.Default())
 }
 
 type addUserCommand struct {

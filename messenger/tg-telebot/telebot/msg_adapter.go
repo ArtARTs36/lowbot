@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/artarts36/lowbot/logx"
+
 	"github.com/artarts36/lowbot/messenger/messengerapi"
 	"github.com/artarts36/lowbot/messenger/tg-telebot/telebot/callback"
 	"gopkg.in/telebot.v4"
@@ -15,11 +17,13 @@ import (
 
 type messageAdapter struct {
 	callbackManager *callback.Manager
+	logger          logx.Logger
 }
 
-func newMessageAdapter(callbackManager *callback.Manager) *messageAdapter {
+func newMessageAdapter(callbackManager *callback.Manager, logger logx.Logger) *messageAdapter {
 	return &messageAdapter{
 		callbackManager: callbackManager,
+		logger:          logger,
 	}
 }
 
@@ -34,9 +38,9 @@ func (a *messageAdapter) AdaptMessage(ctx telebot.Context, msg *telebot.Message)
 	}
 }
 
-func (a *messageAdapter) AdaptCallback(ctx telebot.Context, clb *telebot.Callback) (*message, error) {
+func (a *messageAdapter) AdaptCallback(teleCtx telebot.Context, clb *telebot.Callback) (*message, error) {
 	msg := &message{
-		ctx:             ctx,
+		ctx:             teleCtx,
 		id:              clb.ID,
 		chatID:          strconv.FormatInt(clb.Message.Chat.ID, 10),
 		text:            clb.Message.Text,
@@ -44,15 +48,17 @@ func (a *messageAdapter) AdaptCallback(ctx telebot.Context, clb *telebot.Callbac
 		callbackManager: a.callbackManager,
 	}
 
-	storedCallback, err := a.callbackManager.Find(context.Background(), a.cleanCallbackID(clb.Data))
+	ctx := context.Background()
+
+	storedCallback, err := a.callbackManager.Find(ctx, a.cleanCallbackID(clb.Data))
 	if err != nil {
 		if errors.Is(err, callback.ErrNotFound) {
-			slog.Warn("[lowbot] stored callback not found", slog.String("callback.id", clb.ID))
+			a.logger.WarnContext(ctx, "[lowbot] stored callback not found", slog.String("callback.id", clb.ID))
 		} else {
 			return nil, fmt.Errorf("find stored callback: %w", err)
 		}
 	} else {
-		slog.Debug("[lowbot] stored callback found",
+		a.logger.DebugContext(ctx, "[lowbot] stored callback found",
 			slog.String("callback.id", clb.ID),
 			slog.Any("stored_callback", storedCallback),
 		)

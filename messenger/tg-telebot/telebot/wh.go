@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/artarts36/lowbot/logx"
+
 	"github.com/artarts36/lowbot/messenger/tg-telebot/telebot/callback"
 
 	"github.com/artarts36/lowbot/messenger/messengerapi"
@@ -20,6 +22,7 @@ type WebhookMessenger struct {
 	httpHandler    *tele.Webhook
 	bot            *tele.Bot
 	messageAdapter *messageAdapter
+	logger         logx.Logger
 }
 
 type WebhookConfig struct {
@@ -31,6 +34,7 @@ type WebhookConfig struct {
 
 func NewWebhookMessenger(
 	cfg WebhookConfig,
+	logger logx.Logger,
 ) (*WebhookMessenger, error) {
 	if cfg.Token == "" {
 		return nil, errors.New("missing token")
@@ -58,7 +62,8 @@ func NewWebhookMessenger(
 	return &WebhookMessenger{
 		httpHandler:    webhook,
 		bot:            bot,
-		messageAdapter: newMessageAdapter(callback.NewManager(cfg.CallbackStorage)),
+		messageAdapter: newMessageAdapter(callback.NewManager(cfg.CallbackStorage, logger), logger),
+		logger:         logger,
 	}, nil
 }
 
@@ -67,14 +72,18 @@ func (s *WebhookMessenger) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *WebhookMessenger) Listen(ch chan messengerapi.Message) error {
-	slog.Debug("[webhook-messenger] bot starting")
+	ctx := context.Background()
+
+	s.logger.DebugContext(ctx, "[webhook-messenger] bot starting")
 
 	updates := make(chan tele.Update)
 	go func() {
 		for update := range updates {
+			s.logger.DebugContext(ctx, "[webhook-messenger] received update", slog.Int("update.id", update.ID))
+
 			msg, err := s.adaptUpdate(update)
 			if err != nil {
-				slog.Error("[webhook-messenger] failed to adapt update", slog.Int("update.id", update.ID))
+				s.logger.ErrorContext(ctx, "[webhook-messenger] failed to adapt update", slog.Int("update.id", update.ID))
 				continue
 			}
 
@@ -97,8 +106,6 @@ var errUpdateUnsupported = errors.New("update not supported")
 func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 	teleCtx := tele.NewContext(s.bot, update)
 
-	slog.Debug("[webhook-messenger] received update", slog.Int("update.id", update.ID))
-
 	if update.Message != nil {
 		return s.messageAdapter.AdaptMessage(teleCtx, update.Message), nil
 	}
@@ -107,7 +114,7 @@ func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 		defer func() {
 			rerr := teleCtx.Respond()
 			if rerr != nil {
-				slog.Error("[webhook-messenger] failed to respond to callback",
+				s.logger.ErrorContext(context.Background(), "[lowbot][webhook-messenger] failed to respond to callback",
 					slog.Int("update.id", update.ID),
 					slog.Any("err", rerr),
 				)

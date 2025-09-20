@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 
+	"github.com/artarts36/lowbot/logx"
+
 	"github.com/artarts36/lowbot/engine/command"
 	"github.com/artarts36/lowbot/messenger/messengerapi"
 )
@@ -67,10 +69,12 @@ var (
 
 type compositeErrorHandler struct {
 	handlers []ErrorHandler
+	logger   logx.Logger
 }
 
-func NewErrorHandler(handler ...ErrorHandler) ErrorHandler {
+func NewErrorHandler(logger logx.Logger, handler ...ErrorHandler) ErrorHandler {
 	ch := compositeErrorHandler{
+		logger: logger,
 		handlers: append([]ErrorHandler{
 			permissionDeniedErrHandler,
 			invalidArgumentErrHandler,
@@ -82,12 +86,10 @@ func NewErrorHandler(handler ...ErrorHandler) ErrorHandler {
 }
 
 func (h *compositeErrorHandler) Handle(ctx context.Context, msg messengerapi.Message, handlingErr error) (bool, error) {
+	h.logger.DebugContext(ctx, "[error-handler] handling error", slog.Any("err", handlingErr))
+
 	for _, handler := range h.handlers {
 		handled, err := handler(ctx, msg, handlingErr)
-		if err != nil {
-			return false, err
-		}
-
 		if handled {
 			return true, err
 		}

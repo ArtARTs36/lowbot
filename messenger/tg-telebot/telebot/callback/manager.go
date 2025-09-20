@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/artarts36/lowbot/logx"
+
 	"github.com/cappuccinotm/slogx"
 
 	tele "gopkg.in/telebot.v4"
@@ -16,12 +18,14 @@ type Manager struct {
 	storage Storage
 
 	deletingQueue chan string
+	logger        logx.Logger
 }
 
-func NewManager(storage Storage) *Manager {
+func NewManager(storage Storage, logger logx.Logger) *Manager {
 	m := &Manager{
 		storage:       storage,
 		deletingQueue: make(chan string, deletingQueueSize),
+		logger:        logger,
 	}
 
 	go func() {
@@ -51,7 +55,7 @@ func (m *Manager) Find(ctx context.Context, id string) (*Callback, error) {
 func (m *Manager) Delete(ctx context.Context, id string) {
 	m.deletingQueue <- id
 
-	slog.DebugContext(ctx, "[lowbot][callback-manager] callback stored to delete queue",
+	m.logger.DebugContext(ctx, "[lowbot][callback-manager] callback stored to delete queue",
 		slog.String("callback.id", id),
 	)
 }
@@ -62,7 +66,7 @@ func (m *Manager) listenDeletingQueue() {
 
 		err := m.storage.Delete(ctx, id)
 		if err != nil {
-			slog.ErrorContext(ctx, "[lowbot][callback-manager] failed to delete", slogx.Error(err))
+			m.logger.ErrorContext(ctx, "[lowbot][callback-manager] failed to delete", slogx.Error(err))
 		}
 	}
 }

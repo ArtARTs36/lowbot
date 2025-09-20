@@ -26,6 +26,7 @@ type Machine struct {
 	metrics                 *metrics.Command
 	bus                     command.Bus
 	stateDeterminer         *DialogDeterminer
+	logger                  logx.Logger
 }
 
 func New(
@@ -35,6 +36,7 @@ func New(
 	commandNotFoundFallback CommandNotFoundFallback,
 	metrics *metrics.Group,
 	bus command.Bus,
+	logger logx.Logger,
 ) *Machine {
 	return &Machine{
 		router:                  routes,
@@ -43,7 +45,8 @@ func New(
 		commandNotFoundFallback: commandNotFoundFallback,
 		metrics:                 metrics.Command(),
 		bus:                     bus,
-		stateDeterminer:         newDeterminer(routes, stateStorage, metrics.Command()),
+		stateDeterminer:         newDeterminer(routes, stateStorage, metrics.Command(), logger),
+		logger:                  logger,
 	}
 }
 
@@ -66,7 +69,7 @@ func (h *Machine) Handle(ctx context.Context, message messengerapi.Message) erro
 }
 
 func (h *Machine) handle(ctx context.Context, message messengerapi.Message) error {
-	slog.DebugContext(ctx, "[machine] handling message")
+	h.logger.DebugContext(ctx, "[machine] handling message")
 
 	dialog, err := h.stateDeterminer.Determine(ctx, message)
 	if err != nil {
@@ -77,14 +80,14 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 
 	ctx = logx.WithCommandName(ctx, dialog.Command.Name)
 
-	slog.DebugContext(ctx, "[machine] find action")
+	h.logger.DebugContext(ctx, "[machine] find action")
 
 	act, err := h.findAction(dialog.State, dialog.Command.Command)
 	if err != nil {
 		return fmt.Errorf("find action: %w", err)
 	}
 
-	slog.DebugContext(ctx, "[machine] action found", logx.StateName(act.State()))
+	h.logger.DebugContext(ctx, "[machine] action found", logx.StateName(act.State()))
 
 	run := func(ctx context.Context, req *command.Request) error {
 		if err = act.Run(ctx, req); err != nil {
@@ -92,6 +95,8 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 			var codeErr command.CodeError
 			if errors.As(err, &codeErr) {
 				h.metrics.IncActionHandled(dialog.Command.Name, act.State(), codeErr.Code())
+
+				return fmt.Errorf("%s: %w", codeErr.Code(), codeErr)
 			}
 		}
 
@@ -114,7 +119,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 			return h.finishState(ctx, act, dialog.State)
 		}
 
-		slog.InfoContext(
+		h.logger.InfoContext(
 			ctx,
 			"[machine] transit state",
 			slog.String("from_state", act.State()),
@@ -147,16 +152,16 @@ func (h *Machine) forward(
 	act command.Action,
 ) error {
 	if mState.Forwarded().NewStateName() == state.Passthrough {
-		slog.DebugContext(ctx, "[machine] passthrough", slog.String("to_state", act.Next().State()))
+		h.logger.DebugContext(ctx, "[lowbot][machine] passthrough", slog.String("to_state", act.Next().State()))
 	} else {
-		slog.DebugContext(ctx, "[machine] forwarding", slog.String("to_state", act.State()))
+		h.logger.DebugContext(ctx, "[lowbot][machine] forwarding", slog.String("to_state", act.State()))
 	}
 
 	return h.handle(ctx, message)
 }
 
 func (h *Machine) finishState(ctx context.Context, act command.Action, mState *state.State) error {
-	slog.InfoContext(ctx, "[machine] next state not found", slog.String("state.name", act.State()))
+	h.logger.InfoContext(ctx, "[lowbot][machine] next state not found", slog.String("state.name", act.State()))
 
 	h.metrics.IncFinished(mState.CommandName())
 	h.metrics.ObserveExecution(mState.CommandName(), mState.Duration())
