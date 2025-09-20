@@ -7,9 +7,8 @@ import (
 )
 
 type Command interface {
-	// Description returns a command description.
-	// This result may be used in /start command.
-	Description() string
+	// Definition returns command definition with command name and description.
+	Definition() *Definition
 
 	// Actions returns Actions with states.
 	Actions() *Actions

@@ -23,8 +23,11 @@ func NewStartCommand(name string, router Router) command.Command {
 	}
 }
 
-func (c *StartCommand) Description() string {
-	return ""
+func (c *StartCommand) Definition() *command.Definition {
+	return &command.Definition{
+		Name:        c.name,
+		Description: "",
+	}
 }
 
 func (c *StartCommand) Actions() *command.Actions {
@@ -35,11 +38,13 @@ func (c *StartCommand) Actions() *command.Actions {
 
 			i := 0
 			for _, cmd := range c.router.List() {
-				if cmd.Name == c.name {
+				cmdDefinition := cmd.Definition()
+
+				if cmdDefinition.Name == c.name {
 					continue
 				}
 
-				text[i] = fmt.Sprintf("/%s - %s", cmd.Name, cmd.Command.Description())
+				text[i] = fmt.Sprintf("/%s - %s", cmdDefinition.Name, cmdDefinition.Description)
 				i++
 			}
 

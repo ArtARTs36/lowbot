@@ -14,17 +14,12 @@ var (
 type Router interface {
 	// Add command.
 	// Throws ErrCommandAlreadyExists.
-	Add(cmd *NamedCommand) error
+	Add(cmd command.Command) error
 
 	// Find command by message.
 	// Throws ErrCommandNotFound.
-	Find(cmdName string) (*NamedCommand, error)
+	Find(cmdName string) (command.Command, error)
 
 	// List commands.
-	List() []*NamedCommand
-}
-
-type NamedCommand struct {
-	Name    string
-	Command command.Command
+	List() []command.Command
 }

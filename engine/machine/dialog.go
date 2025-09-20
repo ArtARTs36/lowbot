@@ -17,7 +17,7 @@ import (
 
 type Dialog struct {
 	State   *state.State
-	Command *router.NamedCommand
+	Command command.Command
 }
 
 type DialogDeterminer struct {
@@ -35,7 +35,7 @@ type determineStep struct {
 }
 
 type determineStepEnv struct {
-	command *router.NamedCommand
+	command command.Command
 	state   *state.State
 }
 
@@ -164,10 +164,10 @@ func (h *DialogDeterminer) tryCreateNewDialog(
 		return true, err
 	}
 
-	h.logger.DebugContext(ctx, "[machine] command found", slog.String("command.name", cmd.Name))
+	h.logger.DebugContext(ctx, "[machine] command found", slog.String("command.name", cmd.Definition().Name))
 
 	env.command = cmd
-	env.state = state.NewState(message.GetChatID(), cmd.Name)
+	env.state = state.NewState(message.GetChatID(), cmd.Definition().Name)
 
 	return true, nil
 }
@@ -187,10 +187,10 @@ func (h *DialogDeterminer) continueDialog(
 		return true, fmt.Errorf("find command: %w", err)
 	}
 
-	h.logger.DebugContext(ctx, "[machine] command found", logx.CommandName(cmd.Name))
+	h.logger.DebugContext(ctx, "[machine] command found", logx.CommandName(cmd.Definition().Name))
 
 	if h.detectInterrupt(message, env.state) {
-		h.logger.DebugContext(ctx, "[machine] interrupt detected", logx.CommandName(cmd.Name))
+		h.logger.DebugContext(ctx, "[machine] interrupt detected", logx.CommandName(cmd.Definition().Name))
 
 		cmd, env.state, err = h.tryInterrupt(ctx, cmd, message, env.state)
 		if err != nil {
@@ -211,13 +211,13 @@ func (h *DialogDeterminer) detectInterrupt(message messengerapi.Message, mState 
 
 func (h *DialogDeterminer) tryInterrupt(
 	ctx context.Context,
-	currentCommand *router.NamedCommand,
+	currentCommand command.Command,
 	message messengerapi.Message,
 	mState *state.State,
-) (*router.NamedCommand, *state.State, error) {
+) (command.Command, *state.State, error) {
 	desiredCommandName := message.ExtractCommandName()
 
-	allow, err := currentCommand.Command.Interrupt(ctx, &command.InterruptRequest{
+	allow, err := currentCommand.Interrupt(ctx, &command.InterruptRequest{
 		Message:      message,
 		CurrentState: mState.CommandName(),
 		NewCommand:   desiredCommandName,
@@ -226,7 +226,7 @@ func (h *DialogDeterminer) tryInterrupt(
 		return nil, nil, fmt.Errorf("defines interruption: %w", err)
 	}
 
-	h.metrics.IncInterruption(currentCommand.Name, mState.Name(), desiredCommandName, allow)
+	h.metrics.IncInterruption(currentCommand.Definition().Name, mState.Name(), desiredCommandName, allow)
 
 	if !allow {
 		return currentCommand, mState, nil
@@ -239,11 +239,11 @@ func (h *DialogDeterminer) tryInterrupt(
 
 	h.logger.DebugContext(ctx,
 		"[handler] interrupt command, switch to new command",
-		slog.String("from_command.name", currentCommand.Name),
-		slog.String("to_command.name", newCommand.Name),
+		slog.String("from_command.name", currentCommand.Definition().Name),
+		slog.String("to_command.name", newCommand.Definition().Name),
 	)
 
-	newState := state.NewState(message.GetChatID(), newCommand.Name)
+	newState := state.NewState(message.GetChatID(), newCommand.Definition().Name)
 
 	return newCommand, newState, nil
 }

@@ -92,7 +92,13 @@ type addUserCommand struct {
 	command.AlwaysInterruptCommand
 }
 
-func (addUserCommand) Description() string { return "addUser" }
+func (addUserCommand) Definition() *command.Definition {
+	return &command.Definition{
+		Name:        "add",
+		Description: "Add user",
+	}
+}
+
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(_ context.Context, req *command.Request) error {
@@ -149,7 +155,12 @@ type deleteUserCommand struct {
 	command.AlwaysInterruptCommand
 }
 
-func (deleteUserCommand) Description() string { return "deleteUser" }
+func (deleteUserCommand) Definition() *command.Definition {
+	return &command.Definition{
+		Name:        "delete",
+		Description: "Delete user",
+	}
+}
 
 func (deleteUserCommand) Actions() *command.Actions {
 	return command.NewActions().
@@ -212,7 +223,12 @@ type updateUserCommand struct {
 	command.AlwaysInterruptCommand
 }
 
-func (updateUserCommand) Description() string { return "updateUser" }
+func (updateUserCommand) Definition() *command.Definition {
+	return &command.Definition{
+		Name:        "update",
+		Description: "Update user",
+	}
+}
 
 func (updateUserCommand) Actions() *command.Actions {
 	return command.NewActions().

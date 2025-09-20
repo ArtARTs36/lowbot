@@ -1,29 +1,31 @@
 package router
 
+import "github.com/artarts36/lowbot/engine/command"
+
 type MapStaticRouter struct {
-	commands map[string]*NamedCommand
+	commands map[string]command.Command
 }
 
 func NewMapStaticRouter() *MapStaticRouter {
 	r := &MapStaticRouter{
-		commands: map[string]*NamedCommand{},
+		commands: map[string]command.Command{},
 	}
 
 	return r
 }
 
-func (r *MapStaticRouter) Add(cmd *NamedCommand) error {
-	_, present := r.commands[cmd.Name]
+func (r *MapStaticRouter) Add(cmd command.Command) error {
+	_, present := r.commands[cmd.Definition().Name]
 	if present {
 		return ErrCommandAlreadyExists
 	}
 
-	r.commands[cmd.Name] = cmd
+	r.commands[cmd.Definition().Name] = cmd
 
 	return nil
 }
 
-func (r *MapStaticRouter) Find(cmdName string) (*NamedCommand, error) {
+func (r *MapStaticRouter) Find(cmdName string) (command.Command, error) {
 	cmd, ok := r.commands[cmdName]
 	if !ok {
 		return nil, ErrCommandNotFound
@@ -32,8 +34,8 @@ func (r *MapStaticRouter) Find(cmdName string) (*NamedCommand, error) {
 	return cmd, nil
 }
 
-func (r *MapStaticRouter) List() []*NamedCommand {
-	result := make([]*NamedCommand, 0, len(r.commands))
+func (r *MapStaticRouter) List() []command.Command {
+	result := make([]command.Command, 0, len(r.commands))
 	for _, cmd := range r.commands {
 		result = append(result, cmd)
 	}

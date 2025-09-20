@@ -67,10 +67,7 @@ func New(
 		logger: cfg.logger,
 	}
 
-	err := app.router.Add(&router.NamedCommand{
-		Name:    "start",
-		Command: cfg.startCommandFn(app.router),
-	})
+	err := app.router.Add(cfg.startCommandFn(app.router))
 	if err != nil {
 		return nil, fmt.Errorf("register start command: %w", err)
 	}
@@ -90,15 +87,12 @@ func New(
 	return app, nil
 }
 
-func (app *Application) AddCommand(cmdName string, cmd command.Command) error {
-	return app.router.Add(&router.NamedCommand{
-		Name:    cmdName,
-		Command: cmd,
-	})
+func (app *Application) AddCommand(cmd command.Command) error {
+	return app.router.Add(cmd)
 }
 
 func (app *Application) MustAddCommand(cmdName string, cmd command.Command) {
-	if err := app.AddCommand(cmdName, cmd); err != nil {
+	if err := app.AddCommand(cmd); err != nil {
 		panic(fmt.Sprintf("failed to add command %q: %v", cmdName, err))
 	}
 }

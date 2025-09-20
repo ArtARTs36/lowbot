@@ -33,8 +33,8 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 		cmds := make([]string, 0)
 
 		for _, cmd := range routes.List() {
-			if levenshtein.ComputeDistance(msgCmd, cmd.Name) < levenshteinThreshold {
-				cmds = append(cmds, fmt.Sprintf("/%s - %s", cmd.Name, cmd.Command.Description()))
+			if levenshtein.ComputeDistance(msgCmd, cmd.Definition().Name) < levenshteinThreshold {
+				cmds = append(cmds, fmt.Sprintf("/%s - %s", cmd.Definition().Name, cmd.Definition().Description))
 			}
 		}
 

@@ -78,11 +78,11 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 
 	startedAt := time.Now()
 
-	ctx = logx.WithCommandName(ctx, dialog.Command.Name)
+	ctx = logx.WithCommandName(ctx, dialog.Command.Definition().Name)
 
 	h.logger.DebugContext(ctx, "[machine] find action")
 
-	act, err := h.findAction(dialog.State, dialog.Command.Command)
+	act, err := h.findAction(dialog.State, dialog.Command)
 	if err != nil {
 		return fmt.Errorf("find action: %w", err)
 	}
@@ -94,7 +94,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 			_, err = h.errorHandler(ctx, message, err)
 			var codeErr command.CodeError
 			if errors.As(err, &codeErr) {
-				h.metrics.IncActionHandled(dialog.Command.Name, act.State(), codeErr.Code())
+				h.metrics.IncActionHandled(dialog.Command.Definition().Name, act.State(), codeErr.Code())
 
 				return fmt.Errorf("%s: %w", codeErr.Code(), codeErr)
 			}
@@ -110,7 +110,7 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 	if err != nil {
 		return err
 	}
-	h.metrics.IncActionHandled(dialog.Command.Name, act.State(), "OK")
+	h.metrics.IncActionHandled(dialog.Command.Definition().Name, act.State(), "OK")
 
 	if !dialog.State.RecentlyTransited() {
 		nextAct := act.Next()
@@ -129,14 +129,14 @@ func (h *Machine) handle(ctx context.Context, message messengerapi.Message) erro
 		dialog.State.Transit(nextAct.State())
 	}
 
-	h.metrics.IncStateTransition(dialog.Command.Name, act.State(), dialog.State.Name())
+	h.metrics.IncStateTransition(dialog.Command.Definition().Name, act.State(), dialog.State.Name())
 
 	err = h.stateStorage.Put(ctx, dialog.State)
 	if err != nil {
 		return fmt.Errorf("put state: %w", err)
 	}
 
-	h.metrics.ObserveActionExecution(dialog.Command.Name, act.State(), time.Since(startedAt))
+	h.metrics.ObserveActionExecution(dialog.Command.Definition().Name, act.State(), time.Since(startedAt))
 
 	if dialog.State.Forwarded() != nil {
 		return h.forward(ctx, message, dialog.State, act)
