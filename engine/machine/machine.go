@@ -172,6 +172,18 @@ func (h *Machine) determineCommandAndState(
 ) (*router.NamedCommand, *state.State, error) {
 	var cmd *router.NamedCommand
 
+	if message.GetArgs() != nil {
+		slog.DebugContext(ctx, "[lowbot][machine] message have predefined state", slog.Any("args", message.GetArgs()))
+		args := message.GetArgs()
+
+		mState := state.NewFullState(message.GetChatID(), args.StateName, args.CommandName, args.Data, time.Now())
+		ccmd, err := h.router.Find(args.CommandName)
+		if err != nil {
+			return nil, nil, err
+		}
+		return ccmd, mState, nil
+	}
+
 	mState, err := h.stateStorage.Get(ctx, message.GetChatID())
 	if err != nil {
 		if errors.Is(err, state.ErrStateNotFound) {

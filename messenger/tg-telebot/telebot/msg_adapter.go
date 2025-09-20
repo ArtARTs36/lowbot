@@ -57,9 +57,15 @@ func (a *messageAdapter) AdaptCallback(ctx telebot.Context, clb *telebot.Callbac
 			slog.Any("stored_callback", storedCallback),
 		)
 
-		switch v := storedCallback.Value.(type) { //nolint:gocritic // not need
+		switch v := storedCallback.Value.(type) {
 		case *callback.PassEnumValue:
 			msg.text = v.Value
+		case *callback.CommandButton:
+			msg.args = &messengerapi.Args{
+				CommandName: v.CommandName,
+				StateName:   v.StateName,
+				Data:        v.Data,
+			}
 		}
 	}
 

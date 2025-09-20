@@ -9,6 +9,7 @@ type Message interface {
 	GetSender() *Sender
 
 	ExtractCommandName() string
+	GetArgs() *Args
 
 	Respond(answer *Answer) error
 

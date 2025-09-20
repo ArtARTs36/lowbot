@@ -1,9 +1,10 @@
 package messengerapi
 
 type Answer struct {
-	Text string
-	Menu []string
-	Enum Enum
+	Text    string
+	Menu    []string
+	Enum    Enum
+	Buttons []Button
 }
 
 type Enum struct {

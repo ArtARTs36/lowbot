@@ -21,6 +21,7 @@ type message struct {
 	sender *messengerapi.Sender
 
 	callbackManager *callback.Manager
+	args            *messengerapi.Args
 }
 
 func (m *message) GetID() string {
@@ -53,6 +54,10 @@ func (m *message) Respond(answer *messengerapi.Answer) error {
 
 	if answer.Enum.Valid() {
 		opts = append(opts, m.buildEnumOpt(answer.Enum))
+	}
+
+	if len(answer.Buttons) > 0 {
+		opts = append(opts, m.buildButtonOpt(answer.Buttons))
 	}
 
 	return m.ctx.Send(what, opts...)
@@ -113,7 +118,7 @@ func (m *message) buildEnumOpt(enum messengerapi.Enum) *telebot.ReplyMarkup {
 		btn := menu.Text(title)
 
 		if err := m.callbackManager.Bind(context.Background(), &btn, callback.NewEnum(value)); err != nil {
-			slog.Error("failed to bind enum value", "value", value, "error", err)
+			slog.Error("failed to bind enum value", slog.Any("value", value), slog.Any("err", err))
 		}
 
 		rows[0] = append(rows[0], btn)
@@ -122,4 +127,43 @@ func (m *message) buildEnumOpt(enum messengerapi.Enum) *telebot.ReplyMarkup {
 	menu.Inline(rows...)
 
 	return menu
+}
+
+func (m *message) buildButtonOpt(buttons []messengerapi.Button) *telebot.ReplyMarkup {
+	menu := &telebot.ReplyMarkup{
+		ResizeKeyboard:  true,
+		OneTimeKeyboard: true,
+		IsPersistent:    false,
+	}
+
+	rows := make([]telebot.Row, 1)
+	for _, button := range buttons {
+		btn := menu.Text(button.GetTitle())
+
+		switch buttonValue := button.(type) {
+		case *messengerapi.CommandButton:
+			clb := callback.NewCommandButton(
+				buttonValue.Args.CommandName,
+				buttonValue.Args.StateName,
+				buttonValue.Args.Data,
+			)
+
+			if err := m.callbackManager.Bind(context.Background(), &btn, clb); err != nil {
+				slog.Error("failed to bind button", slog.Any("err", err))
+			}
+		default:
+			slog.Error("[lowbot] unsupported button type", slog.String("button.type", fmt.Sprintf("%T", buttonValue)))
+			continue
+		}
+
+		rows[0] = append(rows[0], btn)
+	}
+
+	menu.Inline(rows...)
+
+	return menu
+}
+
+func (m *message) GetArgs() *messengerapi.Args {
+	return m.args
 }
