@@ -116,11 +116,11 @@ func (r *responder) buildEnumOpt(enum messengerapi.Enum) *telebot.ReplyMarkup {
 	}
 
 	rows := make([]telebot.Row, 1)
-	for value, title := range enum.Values {
-		btn := menu.Text(title)
+	for _, item := range enum.Values {
+		btn := menu.Text(item.Title)
 
-		if err := r.callbackManager.Bind(context.Background(), &btn, callback.NewEnum(value)); err != nil {
-			slog.Error("failed to bind enum value", slog.Any("value", value), slog.Any("err", err))
+		if err := r.callbackManager.Bind(context.Background(), &btn, callback.NewEnum(item.Value)); err != nil {
+			slog.Error("failed to bind enum value", slog.Any("value", item.Value), slog.Any("err", err))
 		}
 
 		rows[0] = append(rows[0], btn)

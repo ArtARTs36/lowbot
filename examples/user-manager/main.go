@@ -129,12 +129,10 @@ func (addUserCommand) Actions() *command.Actions {
 
 			return req.Respond(&messengerapi.Answer{
 				Text: "Select user type",
-				Enum: messengerapi.Enum{
-					Values: map[string]string{
-						"int": "internal",
-						"ext": "external",
-					},
-				},
+				Enum: messengerapi.EnumFromMap(map[string]string{
+					"int": "internal",
+					"ext": "external",
+				}),
 			})
 		}).
 		Then("type", func(_ context.Context, req *command.Request) error {
@@ -187,12 +185,10 @@ func (deleteUserCommand) Actions() *command.Actions {
 		Then("start", func(_ context.Context, req *command.Request) error {
 			return req.Respond(&messengerapi.Answer{
 				Text: "Select user",
-				Enum: messengerapi.Enum{
-					Values: map[string]string{
-						"id-1": "John",
-						"id-2": "Alex",
-					},
-				},
+				Enum: messengerapi.EnumFromMap(map[string]string{
+					"id-1": "John",
+					"id-2": "Alex",
+				}),
 			})
 		}).
 		Then("confirming", func(_ context.Context, req *command.Request) error {
@@ -200,12 +196,10 @@ func (deleteUserCommand) Actions() *command.Actions {
 
 			return req.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf("Delete user %q?", req.State.Get("user.id")),
-				Enum: messengerapi.Enum{
-					Values: map[string]string{
-						"true":  "Yes",
-						"false": "No",
-					},
-				},
+				Enum: messengerapi.EnumFromMap(map[string]string{
+					"true":  "Yes",
+					"false": "No",
+				}),
 			})
 		}).
 		Then("confirming.dispatch", func(_ context.Context, req *command.Request) error {
@@ -235,12 +229,10 @@ func (updateUserCommand) Actions() *command.Actions {
 		Then("prompt_user", func(_ context.Context, req *command.Request) error {
 			return req.Respond(&messengerapi.Answer{
 				Text: "Select user",
-				Enum: messengerapi.Enum{
-					Values: map[string]string{
-						"id-1": "John",
-						"id-2": "Alex",
-					},
-				},
+				Enum: messengerapi.EnumFromMap(map[string]string{
+					"id-1": "John",
+					"id-2": "Alex",
+				}),
 			})
 		}).
 		Then("saving_user", func(_ context.Context, req *command.Request) error {

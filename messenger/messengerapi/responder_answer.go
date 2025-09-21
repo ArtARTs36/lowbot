@@ -8,7 +8,12 @@ type Answer struct {
 }
 
 type Enum struct {
-	Values map[string]string
+	Values []EnumItem
+}
+
+type EnumItem struct {
+	Value string
+	Title string
 }
 
 func (e *Enum) Valid() bool {
@@ -17,11 +22,31 @@ func (e *Enum) Valid() bool {
 
 func EnumFromList(values []string) Enum {
 	en := Enum{
-		Values: make(map[string]string),
+		Values: make([]EnumItem, len(values)),
 	}
 
-	for _, v := range values {
-		en.Values[v] = v
+	for i, v := range values {
+		en.Values[i] = EnumItem{
+			Value: v,
+			Title: v,
+		}
+	}
+
+	return en
+}
+
+func EnumFromMap(values map[string]string) Enum {
+	en := Enum{
+		Values: make([]EnumItem, len(values)),
+	}
+
+	i := 0
+	for value, title := range values {
+		en.Values[i] = EnumItem{
+			Value: value,
+			Title: title,
+		}
+		i++
 	}
 
 	return en
