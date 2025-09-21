@@ -43,6 +43,10 @@ func NewFullState(
 	data map[string]string,
 	startedAt time.Time,
 ) *State {
+	if data == nil {
+		data = make(map[string]string)
+	}
+
 	return &State{
 		chatID:      chatID,
 		name:        name,
