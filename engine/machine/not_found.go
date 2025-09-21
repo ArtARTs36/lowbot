@@ -17,9 +17,10 @@ type CommandNotFoundFallback func(ctx context.Context, req *Request) error
 
 func ErrorCommandNotFoundFallback() CommandNotFoundFallback {
 	return func(_ context.Context, req *Request) error {
-		return req.Responder.Respond(&messengerapi.Answer{
+		_, err := req.Responder.Respond(&messengerapi.Answer{
 			Text: "Command not found.",
 		})
+		return err
 	}
 }
 
@@ -44,8 +45,9 @@ func SuggestCommandNotFoundFallback(routes router.Router) CommandNotFoundFallbac
 			result = append(result, cmds...)
 		}
 
-		return req.Responder.Respond(&messengerapi.Answer{
+		_, err := req.Responder.Respond(&messengerapi.Answer{
 			Text: strings.Join(result, "\n"),
 		})
+		return err
 	}
 }

@@ -4,12 +4,9 @@ import (
 	"strings"
 
 	"github.com/artarts36/lowbot/messenger/messengerapi"
-	"gopkg.in/telebot.v4"
 )
 
 type message struct {
-	ctx telebot.Context
-
 	id     string
 	chatID string
 	text   string

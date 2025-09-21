@@ -102,21 +102,21 @@ func (addUserCommand) Definition() *command.Definition {
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(_ context.Context, req *command.Request) error {
-			err := req.Responder.RespondObject(&messengerapi.LocalImage{
+			_, err := req.Responder.RespondObject(&messengerapi.LocalImage{
 				Path: "./examples/user-manager/image.jpg",
 			})
 			if err != nil {
 				return fmt.Errorf("send image: %w", err)
 			}
 
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Enter user name",
 			})
 		}).
 		Then("name", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.name", req.Message.GetBody())
 
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Enter email",
 			})
 		}).
@@ -127,7 +127,7 @@ func (addUserCommand) Actions() *command.Actions {
 
 			req.State.Set("user.email", req.Message.GetBody())
 
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Select user type",
 				Enum: messengerapi.Enum{
 					Values: map[string]string{
@@ -140,7 +140,7 @@ func (addUserCommand) Actions() *command.Actions {
 		Then("type", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.type", req.Message.GetBody())
 
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf(
 					"name: %s, email: %s, type: %s",
 					req.State.Get("user.name"),
@@ -167,25 +167,25 @@ func (deleteUserCommand) Actions() *command.Actions {
 		With("confirmed", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
 			build(
 				func(_ context.Context, req *command.Request) error {
-					return req.Responder.Respond(&messengerapi.Answer{
+					return req.Respond(&messengerapi.Answer{
 						Text: "User deleted",
 					})
 				}).
 				Then("after_deletion", func(_ context.Context, req *command.Request) error {
-					return req.Responder.Respond(&messengerapi.Answer{
+					return req.Respond(&messengerapi.Answer{
 						Text: "12345678",
 					})
 				})
 		}).
 		With("canceled", func(build func(callback command.ActionCallback) *command.ActionBuilder) {
 			build(func(_ context.Context, req *command.Request) error {
-				return req.Responder.Respond(&messengerapi.Answer{
+				return req.Respond(&messengerapi.Answer{
 					Text: "Deletion canceled",
 				})
 			})
 		}).
 		Then("start", func(_ context.Context, req *command.Request) error {
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Select user",
 				Enum: messengerapi.Enum{
 					Values: map[string]string{
@@ -198,7 +198,7 @@ func (deleteUserCommand) Actions() *command.Actions {
 		Then("confirming", func(_ context.Context, req *command.Request) error {
 			req.State.Set("user.id", req.Message.GetBody())
 
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf("Delete user %q?", req.State.Get("user.id")),
 				Enum: messengerapi.Enum{
 					Values: map[string]string{
@@ -233,7 +233,7 @@ func (updateUserCommand) Definition() *command.Definition {
 func (updateUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("prompt_user", func(_ context.Context, req *command.Request) error {
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Select user",
 				Enum: messengerapi.Enum{
 					Values: map[string]string{
@@ -248,7 +248,7 @@ func (updateUserCommand) Actions() *command.Actions {
 			return req.State.Passthrough()
 		}).
 		Then("prompt_new_email", func(_ context.Context, req *command.Request) error {
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: "Write new email",
 			})
 		}).
@@ -257,7 +257,7 @@ func (updateUserCommand) Actions() *command.Actions {
 			return req.State.Passthrough()
 		}).
 		Then("finished", func(_ context.Context, req *command.Request) error {
-			return req.Responder.Respond(&messengerapi.Answer{
+			return req.Respond(&messengerapi.Answer{
 				Text: fmt.Sprintf(
 					"User %q updated with params: \n"+
 						"* email - %s\n",

@@ -19,7 +19,7 @@ var (
 	invalidArgumentErrHandler ErrorHandler = func(ctx context.Context, req *Request, err error) (bool, error) {
 		validErr := &command.InvalidArgumentError{}
 		if errors.As(err, &validErr) {
-			sendErr := req.Responder.Respond(&messengerapi.Answer{
+			_, sendErr := req.Responder.Respond(&messengerapi.Answer{
 				Text: validErr.Text,
 			})
 			if sendErr != nil {
@@ -45,7 +45,7 @@ var (
 				userMsg = "Permission denied."
 			}
 
-			sendErr := req.Responder.Respond(&messengerapi.Answer{
+			_, sendErr := req.Responder.Respond(&messengerapi.Answer{
 				Text: userMsg,
 			})
 			if sendErr != nil {

@@ -102,11 +102,7 @@ func (s *WebhookMessenger) Listen(ch chan messengerapi.Message) error {
 }
 
 func (s *WebhookMessenger) CreateResponder(chatID string) messengerapi.Responder {
-	return &responder{
-		bot:             s.bot,
-		recipient:       &telebotRecipient{chatID: chatID},
-		callbackManager: s.callbackManager,
-	}
+	return newResponder(chatID, s.bot, s.callbackManager, s.messageAdapter)
 }
 
 func (s *WebhookMessenger) Close() error {
@@ -118,7 +114,7 @@ func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 	teleCtx := tele.NewContext(s.bot, update)
 
 	if update.Message != nil {
-		return s.messageAdapter.AdaptMessage(teleCtx, update.Message), nil
+		return s.messageAdapter.AdaptMessage(update.Message), nil
 	}
 
 	if update.Callback != nil {
@@ -134,7 +130,7 @@ func (s *WebhookMessenger) adaptUpdate(update tele.Update) (*message, error) {
 			s.messageAdapter.callbackManager.Delete(context.Background(), update.Callback.ID)
 		}()
 
-		msg, err := s.messageAdapter.AdaptCallback(teleCtx, update.Callback)
+		msg, err := s.messageAdapter.AdaptCallback(update.Callback)
 		if err != nil {
 			return nil, fmt.Errorf("adapt callback: %w", err)
 		}

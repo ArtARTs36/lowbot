@@ -27,9 +27,8 @@ func newMessageAdapter(callbackManager *callback.Manager, logger logx.Logger) *m
 	}
 }
 
-func (a *messageAdapter) AdaptMessage(ctx telebot.Context, msg *telebot.Message) *message {
+func (a *messageAdapter) AdaptMessage(msg *telebot.Message) *message {
 	return &message{
-		ctx:    ctx,
 		id:     fmt.Sprintf("%d", msg.ID),
 		chatID: strconv.FormatInt(msg.Chat.ID, 10),
 		text:   msg.Text,
@@ -37,9 +36,8 @@ func (a *messageAdapter) AdaptMessage(ctx telebot.Context, msg *telebot.Message)
 	}
 }
 
-func (a *messageAdapter) AdaptCallback(teleCtx telebot.Context, clb *telebot.Callback) (*message, error) {
+func (a *messageAdapter) AdaptCallback(clb *telebot.Callback) (*message, error) {
 	msg := &message{
-		ctx:    teleCtx,
 		id:     clb.ID,
 		chatID: strconv.FormatInt(clb.Message.Chat.ID, 10),
 		text:   clb.Message.Text,

@@ -3,9 +3,9 @@ package messengerapi
 type Responder interface {
 	// Respond responds text and buttons.
 	// See Answer.
-	Respond(answer *Answer) error
+	Respond(answer *Answer) (Message, error)
 
 	// RespondObject responds media files.
 	// See LocalImage
-	RespondObject(file Object) error
+	RespondObject(file Object) (Message, error)
 }

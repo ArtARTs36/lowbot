@@ -36,3 +36,9 @@ func (a *action) Next() Action {
 func (a *action) Run(ctx context.Context, req *Request) error {
 	return a.action(ctx, req)
 }
+
+// Respond is wrapper for Responder.Respond with skip message.
+func (r *Request) Respond(answer *messengerapi.Answer) error {
+	_, err := r.Responder.Respond(answer)
+	return err
+}

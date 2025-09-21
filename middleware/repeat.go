@@ -19,7 +19,7 @@ func PleaseRepeatAgainWithMessage(message string) command.Middleware {
 		if err != nil {
 			var intErr *command.InternalError
 			if errors.As(err, &intErr) {
-				sendErr := req.Responder.Respond(&messengerapi.Answer{
+				_, sendErr := req.Responder.Respond(&messengerapi.Answer{
 					Text: message,
 				})
 				if sendErr != nil {

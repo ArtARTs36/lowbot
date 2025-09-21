@@ -14,17 +14,32 @@ type responder struct {
 	recipient       *telebotRecipient
 	bot             *telebot.Bot
 	callbackManager *callback.Manager
+	msgAdapter      *messageAdapter
 }
 
 type telebotRecipient struct {
 	chatID string
 }
 
+func newResponder(
+	chatID string,
+	bot *telebot.Bot,
+	callbackManager *callback.Manager,
+	msgAdapter *messageAdapter,
+) *responder {
+	return &responder{
+		recipient:       &telebotRecipient{chatID: chatID},
+		bot:             bot,
+		callbackManager: callbackManager,
+		msgAdapter:      msgAdapter,
+	}
+}
+
 func (r *telebotRecipient) Recipient() string {
 	return r.chatID
 }
 
-func (r *responder) Respond(answer *messengerapi.Answer) error {
+func (r *responder) Respond(answer *messengerapi.Answer) (messengerapi.Message, error) {
 	var what interface{}
 	var opts []interface{}
 
@@ -44,11 +59,15 @@ func (r *responder) Respond(answer *messengerapi.Answer) error {
 		opts = append(opts, r.buildButtonOpt(answer.Buttons))
 	}
 
-	_, err := r.bot.Send(r.recipient, what, opts...)
-	return err
+	msg, err := r.bot.Send(r.recipient, what, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.msgAdapter.AdaptMessage(msg), nil
 }
 
-func (r *responder) RespondObject(object messengerapi.Object) error {
+func (r *responder) RespondObject(object messengerapi.Object) (messengerapi.Message, error) {
 	var what interface{}
 
 	switch o := object.(type) {
@@ -59,11 +78,15 @@ func (r *responder) RespondObject(object messengerapi.Object) error {
 			},
 		}
 	default:
-		return fmt.Errorf("unsupported object type: %T", o)
+		return nil, fmt.Errorf("unsupported object type: %T", o)
 	}
 
-	_, err := r.bot.Send(r.recipient, what)
-	return err
+	msg, err := r.bot.Send(r.recipient, what)
+	if err != nil {
+		return nil, err
+	}
+
+	return r.msgAdapter.AdaptMessage(msg), nil
 }
 
 func (r *responder) buildMenuOpt(enum []string) *telebot.ReplyMarkup {
