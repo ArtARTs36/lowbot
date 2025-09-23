@@ -74,7 +74,7 @@ func (r *responder) RespondObject(object messengerapi.Object) (messengerapi.Mess
 	case *messengerapi.LocalImage:
 		what = &telebot.Photo{
 			File: telebot.File{
-				FileLocal: o.Path,
+				FileReader: o.Reader,
 			},
 		}
 	default:

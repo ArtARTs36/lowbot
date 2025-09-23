@@ -102,8 +102,13 @@ func (addUserCommand) Definition() *command.Definition {
 func (addUserCommand) Actions() *command.Actions {
 	return command.NewActions().
 		Then("start", func(_ context.Context, req *command.Request) error {
-			_, err := req.Responder.RespondObject(&messengerapi.LocalImage{
-				Path: "./examples/user-manager/image.jpg",
+			file, err := os.Open("./examples/user-manager/image.jpg")
+			if err != nil {
+				return err
+			}
+
+			_, err = req.Responder.RespondObject(&messengerapi.LocalImage{
+				Reader: file,
 			})
 			if err != nil {
 				return fmt.Errorf("send image: %w", err)
