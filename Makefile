@@ -1,5 +1,7 @@
+LB_MODULES := ./ ./pkg/redis-state-storage
+
 lint: ## Run linter
-	golangci-lint run --fix
+	$(foreach dir,$(LB_MODULES),cd $(dir) && golangci-lint run --fix ;)
 
 test: test/unit test/integration ## Run tests
 

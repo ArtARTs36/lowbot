@@ -25,7 +25,3 @@ func (r *stateRow) from(st *state.State) {
 func (r *stateRow) state() *state.State {
 	return state.NewFullState(r.ChatID, r.Name, r.CommandName, r.Data, r.StartedAt)
 }
-
-func (r *stateRow) filled() bool {
-	return !r.StartedAt.IsZero()
-}
