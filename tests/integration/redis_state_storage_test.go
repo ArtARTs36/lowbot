@@ -16,7 +16,10 @@ import (
 func TestRedisStateStorage(t *testing.T) {
 	storage := redisstatestorage.NewStorage(redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
-	}), "chat_", 10*time.Second)
+	}), redisstatestorage.Config{
+		KeyPrefix: "chat_",
+		TTL:       10 * time.Second,
+	})
 	chatID := "816df9db-ce55-4b25-a6fd-b08448caa081"
 
 	t.Run("get not exists state", func(t *testing.T) {

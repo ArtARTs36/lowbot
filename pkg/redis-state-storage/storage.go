@@ -13,20 +13,22 @@ import (
 )
 
 type Storage struct {
-	client    redis.Cmdable
-	keyPrefix string
-	ttl       time.Duration
+	client redis.Cmdable
+	config Config
+}
+
+type Config struct {
+	KeyPrefix string        `env:"KEY_PREFIX" envDefault:"lowbot_state_"`
+	TTL       time.Duration `env:"TTL" envDefault:"30m"`
 }
 
 func NewStorage(
 	client redis.Cmdable,
-	keyPrefix string,
-	ttl time.Duration,
+	cfg Config,
 ) *Storage {
 	return &Storage{
-		client:    client,
-		keyPrefix: keyPrefix,
-		ttl:       ttl,
+		client: client,
+		config: cfg,
 	}
 }
 
@@ -66,7 +68,7 @@ func (s *Storage) Put(ctx context.Context, state *state.State) error {
 
 	_, err = s.client.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		key := s.key(state.ChatID())
-		return pipe.Set(ctx, key, stateJSON, s.ttl).Err()
+		return pipe.Set(ctx, key, stateJSON, s.config.TTL).Err()
 	})
 	return err
 }
@@ -85,5 +87,5 @@ func (s *Storage) Delete(ctx context.Context, st *state.State) error {
 }
 
 func (s *Storage) key(chatID string) string {
-	return s.keyPrefix + chatID
+	return s.config.KeyPrefix + chatID
 }
