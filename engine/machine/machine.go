@@ -172,9 +172,13 @@ func (h *Machine) finishState(ctx context.Context, act command.Action, mState *s
 	h.metrics.IncFinished(mState.CommandName())
 	h.metrics.ObserveExecution(mState.CommandName(), mState.Duration())
 
-	derr := h.stateStorage.Delete(ctx, mState)
-	if derr != nil {
-		return fmt.Errorf("delete state: %w", derr)
+	err := h.stateStorage.Delete(ctx, mState)
+	if err != nil {
+		if errors.Is(err, state.ErrStateNotFound) {
+			return nil
+		}
+
+		return fmt.Errorf("delete state: %w", err)
 	}
 	return nil
 }

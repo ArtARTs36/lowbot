@@ -10,13 +10,27 @@ permissions:
   checks: write
 
 jobs:
+  detect-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.get-modules.outputs.modules }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Get GO modules
+        uses: ci-space/go-modules-action@v0.1.0
+        id: get-modules
+
   code-lint:
     name: code-lint
     runs-on: ubuntu-latest
-    steps:
-      - name: install deps
-        run: sudo apt install gcc
+    needs: detect-modules
 
+    strategy:
+      matrix:
+        module: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+
+    steps:
       - name: Check out code
         uses: actions/checkout@v3
 
@@ -24,22 +38,21 @@ jobs:
         uses: actions/setup-go@v4 # action page: <https://github.com/actions/setup-go>
         with:
           go-version: stable
+          cache-dependency-path: ${{ matrix.module.dir }}/go.sum
 
       - name: Install Go dependencies
-        run: go mod download
+        run: cd ${{ matrix.module.dir }} && go mod download
 
       - name: Run linter
         uses: golangci/golangci-lint-action@v8
         with:
           version: v2.1
+          working-directory: ${{ matrix.module.dir }}
 
   unit-test:
     name: unit-test
     runs-on: ubuntu-latest
     steps:
-      - name: install deps
-        run: sudo apt install gcc
-
       - name: Check out code
         uses: actions/checkout@v3
 

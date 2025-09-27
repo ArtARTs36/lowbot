@@ -16,5 +16,7 @@ type Storage interface {
 
 	Put(ctx context.Context, state *State) error
 
+	// Delete state.
+	// Throws ErrStateNotFound.
 	Delete(ctx context.Context, state *State) error
 }

@@ -77,6 +77,10 @@ func (m *State) RecentlyTransited() bool {
 	return m.transited
 }
 
+func (m *State) All() map[string]string {
+	return m.data
+}
+
 func (m *State) Get(key string) string {
 	return m.data[key]
 }
