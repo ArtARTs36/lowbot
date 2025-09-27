@@ -8,6 +8,8 @@ import (
 var ErrStateNotFound = errors.New("state not found")
 
 type Storage interface {
+	StorageName() string
+
 	// Get State by chat id.
 	// Throws ErrStateNotFound.
 	Get(ctx context.Context, chatID string) (*State, error)

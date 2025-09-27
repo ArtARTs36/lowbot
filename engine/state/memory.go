@@ -17,6 +17,10 @@ func NewMemoryStorage() Storage {
 	}
 }
 
+func (s *memoryStorage) StorageName() string {
+	return "memory"
+}
+
 func (s *memoryStorage) Get(_ context.Context, chatID string) (*State, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

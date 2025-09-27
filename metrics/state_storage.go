@@ -18,12 +18,12 @@ func NewStateStorage() *StateStorage {
 			Namespace: namespace,
 			Subsystem: subsystemStateStorage,
 			Name:      "operation_execution_milliseconds",
-		}, []string{"operation"}),
+		}, []string{"storage_name", "operation"}),
 	}
 }
 
-func (s *StateStorage) ObserveOperationExecution(operation string, dur time.Duration) {
-	s.operationExecution.WithLabelValues(operation).Observe(float64(dur))
+func (s *StateStorage) ObserveOperationExecution(storageName, operation string, dur time.Duration) {
+	s.operationExecution.WithLabelValues(storageName, operation).Observe(float64(dur))
 }
 
 func (s *StateStorage) Describe(ch chan<- *prometheus.Desc) {
