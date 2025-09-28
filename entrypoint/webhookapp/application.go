@@ -35,7 +35,9 @@ func New(
 	opts ...Option,
 ) (*Application, error) {
 	cfg := &config{
-		storage: state.NewMemoryStorage(),
+		storageFn: func(metrics *metrics.StateStorage) state.Storage {
+			return state.NewObservableStorage(state.NewMemoryStorage(), metrics)
+		},
 		commandNotFoundFallback: func(router.Router) machine.CommandNotFoundFallback {
 			return machine.ErrorCommandNotFoundFallback()
 		},
@@ -59,8 +61,6 @@ func New(
 		return nil, fmt.Errorf("register metrics: %w", err)
 	}
 
-	cfg.storage = state.NewObservableStorage(cfg.storage, metricsGroup.StateStorage())
-
 	app := &Application{
 		router: cfg.router,
 		msngr:  msngr,
@@ -74,7 +74,7 @@ func New(
 
 	app.machine = machine.New(
 		app.router,
-		cfg.storage,
+		cfg.storageFn(metricsGroup.StateStorage()),
 		machine.NewErrorHandler(cfg.logger),
 		cfg.commandNotFoundFallback(app.router),
 		metricsGroup,

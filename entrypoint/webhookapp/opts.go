@@ -2,6 +2,7 @@ package webhookapp
 
 import (
 	"github.com/artarts36/lowbot/logx"
+	"github.com/artarts36/lowbot/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/artarts36/lowbot/engine/command"
@@ -11,7 +12,7 @@ import (
 )
 
 type config struct {
-	storage                 state.Storage
+	storageFn               func(storage *metrics.StateStorage) state.Storage
 	commandNotFoundFallback func(router router.Router) machine.CommandNotFoundFallback
 	httpAddr                string
 	router                  router.Router
@@ -25,7 +26,28 @@ type Option func(*config)
 
 func WithStateStorage(storage state.Storage) Option {
 	return func(c *config) {
-		c.storage = storage
+		c.storageFn = func(metrics *metrics.StateStorage) state.Storage {
+			return state.NewObservableStorage(storage, metrics)
+		}
+	}
+}
+
+// WithPriorityStateStorage creates Storage which separate load for priority and non-priority commands.
+// priorityStorage - typically, is slow storage, e.g. DatabaseStorage
+// fallbackStorage - typically, is fast storage, e.g. MemoryStorage.
+func WithPriorityStateStorage(
+	priorityCommands []string,
+	priorityStorage state.Storage,
+	fallbackStorage state.Storage,
+) Option {
+	return func(c *config) {
+		c.storageFn = func(metrics *metrics.StateStorage) state.Storage {
+			return state.NewPriorityStorage(
+				priorityCommands,
+				state.NewObservableStorage(priorityStorage, metrics),
+				state.NewObservableStorage(fallbackStorage, metrics),
+			)
+		}
 	}
 }
 

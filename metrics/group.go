@@ -14,7 +14,7 @@ type Group struct {
 func NewGroup() *Group {
 	return &Group{
 		command:      newCommand(),
-		stateStorage: NewStateStorage(),
+		stateStorage: newStateStorage(),
 	}
 }
 

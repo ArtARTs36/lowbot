@@ -12,7 +12,7 @@ type StateStorage struct {
 	operationExecution *prometheus.HistogramVec
 }
 
-func NewStateStorage() *StateStorage {
+func newStateStorage() *StateStorage {
 	return &StateStorage{
 		operationExecution: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Namespace: namespace,
